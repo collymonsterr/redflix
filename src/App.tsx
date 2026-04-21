@@ -608,7 +608,6 @@ function LandingPage({
   const placeholder = nsfwEnabled
     ? 'Open /r/gonewild, /r/NSFW_GIF, /r/RealGirls...'
     : 'Open /r/pics, /r/gifs, /u/example...'
-  const modeLabel = nsfwEnabled ? 'adult gallery mode' : 'safe gallery mode'
   const quickLinks = discoverySections
     .flatMap((section) => section.subreddits)
     .filter((subreddit, index, collection) => {
@@ -647,8 +646,7 @@ function LandingPage({
     <main className="landing-shell">
       <header className="landing-topbar">
         <div className="brand-lockup">
-          <p className="eyebrow">redditp next</p>
-          <p className="brand-note">{modeLabel}</p>
+          <img className="brand-logo" src="/redflix-logo.png" alt="RedFlix" />
         </div>
 
         <div className="nav-actions">
@@ -844,7 +842,7 @@ function LockScreen({
     <main className="lock-shell">
       <section className="lock-card">
         <p className="eyebrow">Private access</p>
-        <h1>Unlock redditp next</h1>
+        <h1>Unlock RedFlix</h1>
         <p className="lock-copy">
           Everything stays local to this browser. Enter your passcode to open the app.
         </p>
@@ -1056,8 +1054,7 @@ function QuickExitScreen({
       <div className="quick-exit-cover" aria-hidden="true" />
       <section className="quick-exit-home" aria-label="Safe home cover">
         <div className="brand-lockup">
-          <p className="eyebrow">redditp next</p>
-          <p className="brand-note">safe gallery mode</p>
+          <img className="brand-logo" src="/redflix-logo.png" alt="RedFlix" />
         </div>
 
         <div className="quick-exit-search" aria-hidden="true">

@@ -20,19 +20,21 @@
 
 .brand-lockup {
   display: grid;
-  gap: 4px;
+  align-items: center;
 }
 
-.brand-note,
+.brand-logo {
+  display: block;
+  width: clamp(138px, 16vw, 216px);
+  height: auto;
+  object-fit: contain;
+}
+
 .landing-footer,
 .tile-copy span,
 .meta-copy,
 .empty-state p {
   color: var(--muted);
-}
-
-.brand-note {
-  font-size: 0.94rem;
 }
 
 .nav-actions {
@@ -145,7 +147,7 @@
 .quick-links .feature-link,
 .viewer-link.feature-link,
 .viewer-link.is-active {
-  background: linear-gradient(135deg, rgba(238, 75, 136, 0.94), rgba(255, 128, 84, 0.9));
+  background: linear-gradient(135deg, rgba(255, 24, 60, 0.96), rgba(255, 86, 53, 0.9));
   color: var(--paper);
 }
 
@@ -371,9 +373,9 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 18% 0%, rgba(104, 170, 255, 0.12), transparent 28%),
-    radial-gradient(circle at 86% 8%, rgba(255, 157, 82, 0.08), transparent 24%),
-    linear-gradient(180deg, #101319, #060709 62%);
+    radial-gradient(circle at 18% 0%, rgba(255, 24, 60, 0.12), transparent 28%),
+    radial-gradient(circle at 86% 8%, rgba(255, 255, 255, 0.045), transparent 24%),
+    linear-gradient(180deg, #090a0c, #030304 62%);
 }
 
 .quick-exit-home {
@@ -382,6 +384,10 @@
   width: min(900px, 100%);
   display: grid;
   gap: 18px;
+}
+
+.quick-exit-home .brand-logo {
+  width: clamp(160px, 22vw, 260px);
 }
 
 .quick-exit-search {

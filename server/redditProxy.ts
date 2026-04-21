@@ -1,7 +1,7 @@
 import type { ServerResponse } from 'node:http'
 import { Buffer } from 'node:buffer'
 
-const DEFAULT_REDDIT_USER_AGENT = 'Redflix/0.1 by u/collymonsterr'
+const DEFAULT_REDDIT_USER_AGENT = 'RedFlix/0.1 by u/collymonsterr'
 const TOKEN_EXPIRY_SKEW_MS = 60 * 1000
 
 export type CachedRedditResponse = {

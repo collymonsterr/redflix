@@ -1,4 +1,4 @@
-# Redflix
+# RedFlix
 
 A private Reddit media viewer for browsing image and video feeds in fullscreen, grid, and cinema modes.
 

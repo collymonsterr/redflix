@@ -2,22 +2,22 @@
 
 :root {
   color-scheme: dark;
-  --paper: #f6efe2;
-  --ink: #f4efe7;
-  --muted: #a4a0a0;
-  --page: #0a0a0d;
-  --page-soft: #14171d;
-  --accent: #e07a3d;
-  --accent-strong: #ee4b88;
+  --paper: #f7f7f8;
+  --ink: #f1f1f3;
+  --muted: #989aa2;
+  --page: #030304;
+  --page-soft: #0b0c10;
+  --accent: #ff183c;
+  --accent-strong: #ff5635;
 
   font-family: 'Inter', sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color: var(--ink);
   background:
-    radial-gradient(circle at top, rgba(224, 122, 61, 0.18), transparent 28%),
-    radial-gradient(circle at bottom right, rgba(238, 75, 136, 0.16), transparent 26%),
-    linear-gradient(180deg, #090a0d, #0d1015 50%, #090a0d);
+    radial-gradient(circle at 16% -12%, rgba(255, 24, 60, 0.16), transparent 28%),
+    radial-gradient(circle at 84% 0%, rgba(255, 255, 255, 0.045), transparent 22%),
+    linear-gradient(180deg, #030304, #07080a 52%, #030304);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
