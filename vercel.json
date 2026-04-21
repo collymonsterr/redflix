@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/reddit/listing",
+      "destination": "/api/reddit/listing"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

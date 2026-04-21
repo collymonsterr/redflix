@@ -1,0 +1,90 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap');
+
+:root {
+  color-scheme: dark;
+  --paper: #f6efe2;
+  --ink: #f4efe7;
+  --muted: #a4a0a0;
+  --page: #0a0a0d;
+  --page-soft: #14171d;
+  --accent: #e07a3d;
+  --accent-strong: #ee4b88;
+
+  font-family: 'Inter', sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top, rgba(224, 122, 61, 0.18), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(238, 75, 136, 0.16), transparent 26%),
+    linear-gradient(180deg, #090a0d, #0d1015 50%, #090a0d);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100svh;
+  background: transparent;
+}
+
+#root {
+  min-height: 100svh;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+input,
+button,
+a {
+  outline-color: var(--accent);
+}
+
+img,
+video,
+iframe {
+  display: block;
+  max-width: 100%;
+}
+
+h1 {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(3.2rem, 8vw, 6.2rem);
+  font-weight: 400;
+  line-height: 0.92;
+  letter-spacing: -0.06em;
+  margin: 0;
+}
+
+h2,
+h3 {
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+p {
+  margin: 0;
+}
+
+.eyebrow {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.24em;
+  font-size: 0.75rem;
+}
