@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { URL } from 'node:url'
 import {
@@ -5,7 +6,7 @@ import {
   proxyRedditResponse,
   sendJson,
   type CachedRedditResponse,
-} from '../../server/redditProxy'
+} from '../../server/redditProxy.js'
 
 const COMMENTS_CACHE_TTL_MS = 10 * 60 * 1000
 const responseCache = new Map<string, CachedRedditResponse>()

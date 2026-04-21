@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import type { ServerResponse } from 'node:http'
 import { Buffer } from 'node:buffer'
 
