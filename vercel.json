@@ -5,6 +5,10 @@
       "destination": "/api/reddit/listing"
     },
     {
+      "source": "/api/reddit/comments",
+      "destination": "/api/reddit/comments"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

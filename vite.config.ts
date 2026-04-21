@@ -2,29 +2,15 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { URL } from 'node:url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import {
+  createRedditUrl,
+  proxyRedditResponse,
+  sendJson,
+  type CachedRedditResponse,
+} from './server/redditProxy'
 
-const REDDIT_USER_AGENT =
-  'Mozilla/5.0 (compatible; RedditMediaViewer/0.1; +local)'
 const LISTING_CACHE_TTL_MS = 10 * 60 * 1000
-
-type CachedListingResponse = {
-  body: string
-  contentType: string
-  expiresAt: number
-  statusCode: number
-}
-
-const listingResponseCache = new Map<string, CachedListingResponse>()
-
-const sendJson = (
-  res: ServerResponse,
-  statusCode: number,
-  payload: Record<string, unknown>,
-) => {
-  res.statusCode = statusCode
-  res.setHeader('Content-Type', 'application/json; charset=utf-8')
-  res.end(JSON.stringify(payload))
-}
+const listingResponseCache = new Map<string, CachedRedditResponse>()
 
 const isValidSubreddit = (value: string) => /^[A-Za-z0-9_]{2,32}$/.test(value)
 const isValidUsername = (value: string) => /^[A-Za-z0-9_-]{2,32}$/.test(value)
@@ -64,13 +50,18 @@ const redditApiMiddleware = async (
       return
     }
 
-    const upstream = new URL(`https://api.reddit.com/comments/${postId}`)
+    const upstream = createRedditUrl(`/comments/${postId}`)
     upstream.searchParams.set('raw_json', '1')
     upstream.searchParams.set('limit', String(Math.min(Math.max(limit, 1), 20)))
     upstream.searchParams.set('sort', 'top')
     upstream.searchParams.set('depth', '1')
 
-    await proxyRedditResponse(upstream, res)
+    await proxyRedditResponse(
+      upstream,
+      res,
+      listingResponseCache,
+      LISTING_CACHE_TTL_MS,
+    )
     return
   }
 
@@ -114,8 +105,8 @@ const redditApiMiddleware = async (
 
   const upstream =
     kind === 'user'
-      ? new URL(`https://api.reddit.com/user/${name}/submitted`)
-      : new URL(`https://api.reddit.com/r/${name}/${sort}`)
+      ? createRedditUrl(`/user/${name}/submitted`)
+      : createRedditUrl(`/r/${name}/${sort}`)
   upstream.searchParams.set('raw_json', '1')
   upstream.searchParams.set('limit', String(Math.min(Math.max(limit, 1), 100)))
 
@@ -130,55 +121,12 @@ const redditApiMiddleware = async (
     upstream.searchParams.set('t', timeWindow)
   }
 
-  await proxyRedditResponse(upstream, res)
-}
-
-async function proxyRedditResponse(upstream: URL, res: ServerResponse) {
-  const cacheKey = upstream.toString()
-  const cached = listingResponseCache.get(cacheKey)
-  if (cached && cached.expiresAt > Date.now()) {
-    res.statusCode = cached.statusCode
-    res.setHeader('Content-Type', cached.contentType)
-    res.setHeader('X-Reddit-Cache', 'HIT')
-    res.end(cached.body)
-    return
-  }
-
-  try {
-    const response = await fetch(upstream, {
-      headers: {
-        'user-agent': REDDIT_USER_AGENT,
-      },
-    })
-
-    const body = await response.text()
-    const contentType =
-      response.headers.get('content-type') ?? 'application/json; charset=utf-8'
-
-    if (response.ok) {
-      listingResponseCache.set(cacheKey, {
-        body,
-        contentType,
-        expiresAt: Date.now() + LISTING_CACHE_TTL_MS,
-        statusCode: response.status,
-      })
-    } else if (response.status === 429 && cached) {
-      res.statusCode = cached.statusCode
-      res.setHeader('Content-Type', cached.contentType)
-      res.setHeader('X-Reddit-Cache', 'STALE')
-      res.end(cached.body)
-      return
-    }
-
-    res.statusCode = response.status
-    res.setHeader('Content-Type', contentType)
-    res.end(body)
-  } catch (error) {
-    sendJson(res, 502, {
-      error: 'Failed to reach Reddit.',
-      detail: error instanceof Error ? error.message : 'Unknown error',
-    })
-  }
+  await proxyRedditResponse(
+    upstream,
+    res,
+    listingResponseCache,
+    LISTING_CACHE_TTL_MS,
+  )
 }
 
 const redditApiPlugin = () => ({
