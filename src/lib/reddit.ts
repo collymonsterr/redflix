@@ -304,10 +304,7 @@ export async function fetchPostComments(
 
   const promise = fetch(`/api/reddit/comments?${searchParams}`).then(async (res) => {
     if (!res.ok) {
-      const errorBody = await res.text()
-      throw new Error(
-        `Reddit returned ${res.status}. ${errorBody.slice(0, 120).trim()}`,
-      )
+      throw new Error(await readRedditError(res))
     }
 
     const response = (await res.json()) as RedditCommentListing[]
@@ -359,15 +356,51 @@ function createUserSearchParams(request: UserListingRequest) {
 function fetchListingPage(searchParams: URLSearchParams) {
   return fetch(`/api/reddit/listing?${searchParams}`).then(async (res) => {
     if (!res.ok) {
-      const errorBody = await res.text()
-      throw new Error(
-        `Reddit returned ${res.status}. ${errorBody.slice(0, 120).trim()}`,
-      )
+      throw new Error(await readRedditError(res))
     }
 
     const listing = (await res.json()) as RedditListing
     return normalizeListing(listing)
   })
+}
+
+async function readRedditError(res: Response) {
+  const errorBody = await res.text()
+  const contentType = res.headers.get('content-type') ?? ''
+
+  if (contentType.includes('application/json')) {
+    try {
+      const payload = JSON.parse(errorBody) as {
+        error?: unknown
+        detail?: unknown
+      }
+      const message =
+        typeof payload.error === 'string'
+          ? payload.error
+          : typeof payload.detail === 'string'
+            ? payload.detail
+            : ''
+
+      if (message) {
+        return `Reddit returned ${res.status}. ${message}`
+      }
+    } catch {
+      // Fall through to the plain-text cleanup below.
+    }
+  }
+
+  if (/blocked by network security|developer token/i.test(errorBody)) {
+    return `Reddit returned ${res.status}. Reddit blocked this deployment. Add REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET in Vercel, then redeploy.`
+  }
+
+  const cleaned = errorBody
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  return `Reddit returned ${res.status}. ${cleaned.slice(0, 180)}`
 }
 
 export function warmMediaAsset(item: ViewerItem | undefined) {

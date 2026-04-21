@@ -134,6 +134,21 @@ export async function proxyRedditResponse(
     const body = await response.text()
     const contentType =
       response.headers.get('content-type') ?? 'application/json; charset=utf-8'
+    const isRedditNetworkBlock =
+      response.status === 403 &&
+      /blocked by network security|developer token/i.test(body)
+
+    if (isRedditNetworkBlock) {
+      sendJson(res, 403, {
+        code: accessToken
+          ? 'reddit_oauth_blocked'
+          : 'reddit_credentials_required',
+        error: accessToken
+          ? 'Reddit blocked the authenticated proxy request. Check the Reddit app credentials and user agent in Vercel.'
+          : 'Reddit blocked this Vercel deployment. Add REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET in Vercel, then redeploy.',
+      })
+      return
+    }
 
     if (response.ok) {
       responseCache.set(cacheKey, {
