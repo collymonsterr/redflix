@@ -28,6 +28,7 @@ import {
   applyEmbedPlaybackPreferences,
   defaultViewerSettings,
   type DisplayMode,
+  fetchPostComments,
   fetchSubredditPage,
   fetchUserPage,
   normalizeViewerSettings,
@@ -35,6 +36,7 @@ import {
   type ListingPage,
   type MediaFilter,
   type OrientationFilter,
+  type RedditComment,
   type SortMode,
   type ViewerItem,
 } from './lib/reddit'
@@ -1158,6 +1160,12 @@ function ViewerPage({
   const [selectedTag, setSelectedTag] = useState('all')
   const [soundBlockedItemKey, setSoundBlockedItemKey] = useState('')
   const [soundUnavailableItemKey, setSoundUnavailableItemKey] = useState('')
+  const [commentsOpen, setCommentsOpen] = useState(false)
+  const [comments, setComments] = useState<RedditComment[]>([])
+  const [commentsStatus, setCommentsStatus] = useState<
+    'idle' | 'loading' | 'ready' | 'error'
+  >('idle')
+  const [commentIndex, setCommentIndex] = useState(0)
 
   const viewerShellRef = useRef<HTMLElement | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
@@ -1167,6 +1175,7 @@ function ViewerPage({
   const gridScrollTopRef = useRef(0)
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null)
   const lastRecordedItemRef = useRef('')
+  const commentRequestIdRef = useRef(0)
 
   const seenSet = useMemo(() => new Set(seenItems), [seenItems])
   const favoriteEntries = useMemo(
@@ -1362,6 +1371,8 @@ function ViewerPage({
       setProgress(0)
       setIsPaused(false)
       setSoundBlockedItemKey('')
+      setCommentsOpen(false)
+      commentRequestIdRef.current += 1
       onSettingsChange((current) =>
         current.muted
           ? {
@@ -1406,6 +1417,8 @@ function ViewerPage({
       gridScrollTopRef.current = window.scrollY
       setIsPaused(false)
       setSoundBlockedItemKey('')
+      setCommentsOpen(false)
+      commentRequestIdRef.current += 1
       onSettingsChange((current) =>
         current.muted
           ? {
@@ -1974,6 +1987,35 @@ function ViewerPage({
 
     if (nextValue === null) return
     onUpdateFavoriteTags(activeItem.key, parseFavoriteTags(nextValue))
+  }
+
+  const handleToggleComments = () => {
+    if (!activeItem) return
+
+    if (commentsOpen) {
+      setCommentsOpen(false)
+      return
+    }
+
+    const postId = activeItem.postId
+    const requestId = commentRequestIdRef.current + 1
+    commentRequestIdRef.current = requestId
+    setCommentsOpen(true)
+    setCommentsStatus('loading')
+    setComments([])
+    setCommentIndex(0)
+
+    fetchPostComments(postId, 8)
+      .then((nextComments) => {
+        if (commentRequestIdRef.current !== requestId) return
+        setComments(nextComments)
+        setCommentsStatus('ready')
+      })
+      .catch(() => {
+        if (commentRequestIdRef.current !== requestId) return
+        setComments([])
+        setCommentsStatus('error')
+      })
   }
 
   const toggleSound = () => {
@@ -2689,6 +2731,13 @@ function ViewerPage({
                 >
                   /r/{activeItem.subreddit}
                 </button>
+                <button
+                  className={commentsOpen ? 'is-active' : ''}
+                  type="button"
+                  onClick={handleToggleComments}
+                >
+                  Comments
+                </button>
                 <a
                   className="viewer-link muted"
                   href={activeItem.permalink}
@@ -2698,11 +2747,97 @@ function ViewerPage({
                   Reddit thread
                 </a>
               </div>
+              {commentsOpen ? (
+                <CommentPreviewCard
+                  comments={comments}
+                  index={commentIndex}
+                  status={commentsStatus}
+                  onMove={(direction) =>
+                    setCommentIndex((current) => {
+                      if (comments.length === 0) return 0
+                      return (current + direction + comments.length) % comments.length
+                    })
+                  }
+                />
+              ) : null}
             </footer>
           ) : null}
         </section>
       )}
     </main>
+  )
+}
+
+function CommentPreviewCard({
+  comments,
+  index,
+  status,
+  onMove,
+}: {
+  comments: RedditComment[]
+  index: number
+  status: 'idle' | 'loading' | 'ready' | 'error'
+  onMove: (direction: 1 | -1) => void
+}) {
+  const safeIndex = comments.length > 0 ? Math.min(index, comments.length - 1) : 0
+  const primaryComment = comments[safeIndex]
+  const extraComments =
+    primaryComment && primaryComment.body.length < 180
+      ? comments.filter((_, commentIndex) => commentIndex !== safeIndex).slice(0, 2)
+      : []
+
+  return (
+    <aside className="comment-preview-card">
+      <div className="comment-preview-header">
+        <span>Comment peek</span>
+        {comments.length > 1 ? (
+          <div className="comment-preview-controls">
+            <button type="button" onClick={() => onMove(-1)}>
+              ‹
+            </button>
+            <span>
+              {safeIndex + 1}/{comments.length}
+            </span>
+            <button type="button" onClick={() => onMove(1)}>
+              ›
+            </button>
+          </div>
+        ) : null}
+      </div>
+
+      {status === 'loading' ? (
+        <p className="comment-preview-note">Loading top comments...</p>
+      ) : status === 'error' ? (
+        <p className="comment-preview-note">Couldn’t load comments right now.</p>
+      ) : primaryComment ? (
+        <div className="comment-preview-scroll">
+          <CommentPreviewItem comment={primaryComment} />
+          {extraComments.map((comment) => (
+            <CommentPreviewItem key={comment.id} comment={comment} compact />
+          ))}
+        </div>
+      ) : (
+        <p className="comment-preview-note">No top-level comments to preview.</p>
+      )}
+    </aside>
+  )
+}
+
+function CommentPreviewItem({
+  comment,
+  compact = false,
+}: {
+  comment: RedditComment
+  compact?: boolean
+}) {
+  return (
+    <article className={`comment-preview-item ${compact ? 'is-compact' : ''}`}>
+      <p>{comment.body}</p>
+      <span>
+        u/{comment.author}
+        {comment.score ? ` · ${comment.score} pts` : ''}
+      </span>
+    </article>
   )
 }
 

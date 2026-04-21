@@ -1257,6 +1257,79 @@ iframe.stage-media {
   background: linear-gradient(135deg, var(--accent), var(--accent-strong));
 }
 
+.comment-preview-card {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.comment-preview-header,
+.comment-preview-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.comment-preview-header {
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.comment-preview-controls {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.comment-preview-controls button {
+  padding: 0.28rem 0.5rem;
+}
+
+.comment-preview-scroll {
+  display: grid;
+  gap: 10px;
+  max-height: min(32svh, 280px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding-right: 2px;
+}
+
+.comment-preview-item {
+  display: grid;
+  gap: 6px;
+}
+
+.comment-preview-item + .comment-preview-item {
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.comment-preview-item p,
+.comment-preview-note {
+  margin: 0;
+  color: var(--paper);
+  line-height: 1.42;
+}
+
+.comment-preview-item.is-compact p {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+.comment-preview-item span,
+.comment-preview-note {
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
 @media (min-width: 1080px) {
   .viewer-shell.has-side-panel {
     --viewer-footer-height: 18px;
@@ -1299,7 +1372,7 @@ iframe.stage-media {
     bottom: 18px;
     width: var(--stage-side-panel-width);
     display: grid;
-    grid-template-rows: auto 1fr;
+    grid-template-rows: auto auto 1fr;
     align-items: stretch;
     align-content: start;
     justify-content: stretch;

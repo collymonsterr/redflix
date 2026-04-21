@@ -28,6 +28,7 @@ const sendJson = (
 
 const isValidSubreddit = (value: string) => /^[A-Za-z0-9_]{2,32}$/.test(value)
 const isValidUsername = (value: string) => /^[A-Za-z0-9_-]{2,32}$/.test(value)
+const isValidPostId = (value: string) => /^[A-Za-z0-9]{3,16}$/.test(value)
 const isValidSort = (value: string) => ['hot', 'top'].includes(value)
 const isValidTimeWindow = (value: string) =>
   ['day', 'week', 'month', 'year', 'all'].includes(value)
@@ -43,8 +44,33 @@ const redditApiMiddleware = async (
   }
 
   const requestUrl = new URL(req.url, 'http://localhost')
-  if (requestUrl.pathname !== '/api/reddit/listing') {
+  if (
+    requestUrl.pathname !== '/api/reddit/listing' &&
+    requestUrl.pathname !== '/api/reddit/comments'
+  ) {
     next()
+    return
+  }
+
+  if (requestUrl.pathname === '/api/reddit/comments') {
+    const postId = requestUrl.searchParams.get('postId')?.trim() ?? ''
+    const limit = Number.parseInt(
+      requestUrl.searchParams.get('limit')?.trim() ?? '8',
+      10,
+    )
+
+    if (!isValidPostId(postId)) {
+      sendJson(res, 400, { error: 'Invalid post id.' })
+      return
+    }
+
+    const upstream = new URL(`https://api.reddit.com/comments/${postId}`)
+    upstream.searchParams.set('raw_json', '1')
+    upstream.searchParams.set('limit', String(Math.min(Math.max(limit, 1), 20)))
+    upstream.searchParams.set('sort', 'top')
+    upstream.searchParams.set('depth', '1')
+
+    await proxyRedditResponse(upstream, res)
     return
   }
 
@@ -88,8 +114,8 @@ const redditApiMiddleware = async (
 
   const upstream =
     kind === 'user'
-      ? new URL(`https://www.reddit.com/user/${name}/submitted/.json`)
-      : new URL(`https://www.reddit.com/r/${name}/${sort}.json`)
+      ? new URL(`https://api.reddit.com/user/${name}/submitted`)
+      : new URL(`https://api.reddit.com/r/${name}/${sort}`)
   upstream.searchParams.set('raw_json', '1')
   upstream.searchParams.set('limit', String(Math.min(Math.max(limit, 1), 100)))
 
@@ -104,6 +130,10 @@ const redditApiMiddleware = async (
     upstream.searchParams.set('t', timeWindow)
   }
 
+  await proxyRedditResponse(upstream, res)
+}
+
+async function proxyRedditResponse(upstream: URL, res: ServerResponse) {
   const cacheKey = upstream.toString()
   const cached = listingResponseCache.get(cacheKey)
   if (cached && cached.expiresAt > Date.now()) {

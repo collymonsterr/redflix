@@ -36,6 +36,14 @@ export type ListingPage = {
   items: ViewerItem[]
 }
 
+export type RedditComment = {
+  id: string
+  author: string
+  body: string
+  permalink: string
+  score: number
+}
+
 export type ListingRequest = {
   subreddit: string
   sortMode: SortMode
@@ -60,6 +68,23 @@ type RedditListing = {
 type RedditListingChild = {
   kind?: string
   data?: RedditPost
+}
+
+type RedditCommentListing = {
+  data?: {
+    children?: RedditCommentChild[]
+  }
+}
+
+type RedditCommentChild = {
+  kind?: string
+  data?: {
+    author?: string
+    body?: string
+    id?: string
+    permalink?: string
+    score?: number
+  }
 }
 
 type RedditGalleryMetadata = {
@@ -137,6 +162,7 @@ type RedditPost = {
 }
 
 const listingCache = new Map<string, Promise<ListingPage>>()
+const commentCache = new Map<string, Promise<RedditComment[]>>()
 
 const IMAGE_EXTENSIONS = /\.(png|jpe?g|gif|bmp|webp)$/i
 const VIDEO_EXTENSIONS = /\.(mp4|webm|mov|m4v)$/i
@@ -264,6 +290,37 @@ export async function fetchUserPage(
   })
 }
 
+export async function fetchPostComments(
+  postId: string,
+  limit = 8,
+): Promise<RedditComment[]> {
+  const searchParams = new URLSearchParams({
+    postId,
+    limit: String(limit),
+  })
+  const cacheKey = searchParams.toString()
+  const cached = commentCache.get(cacheKey)
+  if (cached) return cached
+
+  const promise = fetch(`/api/reddit/comments?${searchParams}`).then(async (res) => {
+    if (!res.ok) {
+      const errorBody = await res.text()
+      throw new Error(
+        `Reddit returned ${res.status}. ${errorBody.slice(0, 120).trim()}`,
+      )
+    }
+
+    const response = (await res.json()) as RedditCommentListing[]
+    return normalizeComments(response)
+  })
+
+  commentCache.set(cacheKey, promise)
+  return promise.catch((error) => {
+    commentCache.delete(cacheKey)
+    throw error
+  })
+}
+
 function createSubredditSearchParams(request: ListingRequest) {
   const searchParams = new URLSearchParams({
     kind: 'subreddit',
@@ -338,6 +395,32 @@ function normalizeListing(listing: RedditListing): ListingPage {
     after: listing.data?.after ?? null,
     items,
   }
+}
+
+function normalizeComments(response: RedditCommentListing[]) {
+  const children = response[1]?.data?.children ?? []
+
+  return children.flatMap((child) => {
+    const data = child.data
+    const id = data?.id?.trim() ?? ''
+    const author = data?.author?.trim() ?? ''
+    const body = data?.body?.trim() ?? ''
+
+    if (child.kind !== 't1' || !id || !author || !body) return []
+    if (body === '[deleted]' || body === '[removed]') return []
+
+    return [
+      {
+        id,
+        author,
+        body,
+        permalink: data?.permalink
+          ? `https://www.reddit.com${data.permalink}`
+          : 'https://www.reddit.com',
+        score: data?.score ?? 0,
+      },
+    ]
+  })
 }
 
 function normalizePost(post: RedditPost): ViewerItem[] {

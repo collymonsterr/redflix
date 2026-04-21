@@ -77,8 +77,8 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   const upstream =
     kind === 'user'
-      ? new URL(`https://www.reddit.com/user/${name}/submitted/.json`)
-      : new URL(`https://www.reddit.com/r/${name}/${sort}.json`)
+      ? new URL(`https://api.reddit.com/user/${name}/submitted`)
+      : new URL(`https://api.reddit.com/r/${name}/${sort}`)
   upstream.searchParams.set('raw_json', '1')
   upstream.searchParams.set('limit', String(Math.min(Math.max(limit, 1), 100)))
 
