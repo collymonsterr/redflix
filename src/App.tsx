@@ -1165,6 +1165,7 @@ function ViewerPage({
   const [commentIndex, setCommentIndex] = useState(0)
 
   const viewerShellRef = useRef<HTMLElement | null>(null)
+  const stageFrameRef = useRef<HTMLDivElement | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const chromeTimerRef = useRef<number | null>(null)
@@ -1431,7 +1432,7 @@ function ViewerPage({
   )
 
   const handleToggleFullscreen = useCallback(() => {
-    void toggleFullscreen(viewerShellRef.current)
+    void toggleFullscreen(stageFrameRef.current)
   }, [])
 
   const togglePause = useCallback(() => {
@@ -1897,7 +1898,7 @@ function ViewerPage({
 
   useEffect(() => {
     const onFullscreenChange = () => {
-      setIsFullscreen(document.fullscreenElement === viewerShellRef.current)
+      setIsFullscreen(document.fullscreenElement === stageFrameRef.current)
     }
 
     document.addEventListener('fullscreenchange', onFullscreenChange)
@@ -2506,6 +2507,7 @@ function ViewerPage({
           </div>
 
           <div
+            ref={stageFrameRef}
             className={`stage-frame ${
               activeItem?.mediaType === 'video' ? 'stage-frame--top-aligned' : ''
             }`}
