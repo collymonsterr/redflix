@@ -775,8 +775,7 @@
 .viewer-shell.is-fullscreen .viewer-dock,
 .viewer-shell.is-fullscreen .stage-nav,
 .viewer-shell.is-fullscreen .stage-footer,
-.viewer-shell.is-fullscreen .progress-track,
-.viewer-shell.is-fullscreen .stage-quick-controls {
+.viewer-shell.is-fullscreen .progress-track {
   display: none;
 }
 
@@ -1060,7 +1059,9 @@
 }
 
 .stage-frame:fullscreen .stage-quick-controls {
-  display: none;
+  position: fixed;
+  left: 24px;
+  bottom: 24px;
 }
 
 .stage-frame:fullscreen video.stage-media,
@@ -1152,6 +1153,7 @@ iframe.stage-media {
 }
 
 .viewer-stage-shell:hover .stage-quick-controls,
+.stage-frame:fullscreen:hover .stage-quick-controls,
 .stage-quick-controls.is-visible {
   opacity: 1;
   pointer-events: auto;
