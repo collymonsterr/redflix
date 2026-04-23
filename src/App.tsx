@@ -47,7 +47,10 @@ import {
 } from './lib/storage'
 
 type Route =
-  | { kind: 'home' }
+  | {
+      kind: 'home'
+      nsfw: boolean
+    }
   | { kind: 'favorites' }
   | { kind: 'cinema' }
   | { kind: 'following-creators' }
@@ -121,7 +124,7 @@ function App() {
   const [isQuickExitActive, setIsQuickExitActive] = useState(false)
   const [privacyDialogMode, setPrivacyDialogMode] =
     useState<PrivacyDialogMode>('closed')
-  const [nsfwEnabled, setNsfwEnabled] = usePersistentState<boolean>(
+  const [storedNsfwEnabled, setStoredNsfwEnabled] = usePersistentState<boolean>(
     storageKeys.nsfwEnabled,
     false,
   )
@@ -154,6 +157,7 @@ function App() {
     defaultViewerSettings,
     normalizeViewerSettings,
   )
+  const nsfwEnabled = route.kind === 'home' ? route.nsfw : storedNsfwEnabled
 
   useEffect(() => {
     const onPopState = () => {
@@ -163,6 +167,11 @@ function App() {
     window.addEventListener('popstate', onPopState)
     return () => window.removeEventListener('popstate', onPopState)
   }, [])
+
+  useEffect(() => {
+    if (route.kind !== 'home') return
+    setStoredNsfwEnabled(route.nsfw)
+  }, [route, setStoredNsfwEnabled])
 
   useEffect(() => {
     if (audioDefaultsVersion >= 1) return
@@ -193,6 +202,26 @@ function App() {
     window.history.pushState({}, '', path)
     setRoute(parseRoute(path))
   }
+
+  const navigateHome = useCallback(() => {
+    navigateTo(nsfwEnabled ? '/nsfw' : '/')
+  }, [nsfwEnabled])
+
+  const setNsfwMode = useCallback(
+    (nextValue: boolean) => {
+      setStoredNsfwEnabled(nextValue)
+
+      if (route.kind === 'home') {
+        navigateTo(nextValue ? '/nsfw' : '/')
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }
+    },
+    [route.kind, setStoredNsfwEnabled],
+  )
+
+  const toggleNsfw = useCallback(() => {
+    setNsfwMode(!nsfwEnabled)
+  }, [nsfwEnabled, setNsfwMode])
 
   const resetCinemaPresetIfNeeded = (current: ViewerSettings) =>
     route.kind === 'cinema'
@@ -297,7 +326,7 @@ function App() {
   }
 
   const openCinema = () => {
-    setNsfwEnabled(true)
+    setStoredNsfwEnabled(true)
     setViewerSettings((current) => ({
       ...current,
       displayMode: 'viewer',
@@ -341,12 +370,12 @@ function App() {
     setPrivacyDialogMode('closed')
 
     window.requestAnimationFrame(() => {
-      setNsfwEnabled(false)
+      setStoredNsfwEnabled(false)
       navigateTo('/')
       window.scrollTo({ top: 0 })
       void exitFullscreenIfNeeded()
     })
-  }, [setNsfwEnabled])
+  }, [setStoredNsfwEnabled])
 
   const updateSession = (subreddit: string, nextSession: ViewerSession) => {
     setSessions((current) => ({
@@ -503,7 +532,7 @@ function App() {
               onOpenPortraitSubreddit={openPortraitSubreddit}
               onOpenPrivacyDialog={openPrivacyDialog}
               onOpenSubreddit={openSubreddit}
-              onToggleNsfw={() => setNsfwEnabled((current) => !current)}
+              onToggleNsfw={toggleNsfw}
             />
           ) : (
             <ViewerPage
@@ -521,7 +550,7 @@ function App() {
               nsfwEnabled={nsfwEnabled}
               seenItems={seenItems}
               settings={viewerSettings}
-              onBack={() => navigateTo('/')}
+              onBack={navigateHome}
               onOpenFavorites={openFavorites}
               onOpenFollowingCreators={openFollowingCreators}
               onOpenFollowingSubreddits={openFollowingSubreddits}
@@ -536,7 +565,7 @@ function App() {
               onToggleFollowCreator={toggleFollowCreator}
               onToggleFollowSubreddit={toggleFollowSubreddit}
               onToggleFavorite={toggleFavorite}
-              onToggleNsfw={() => setNsfwEnabled((current) => !current)}
+              onToggleNsfw={toggleNsfw}
               onUpdateFavoriteTags={updateFavoriteTags}
             />
           )}
@@ -3426,6 +3455,13 @@ function usePersistentState<T>(
 }
 
 function parseRoute(pathname: string): Route {
+  if (/^\/nsfw\/?$/i.test(pathname)) {
+    return {
+      kind: 'home',
+      nsfw: true,
+    }
+  }
+
   if (/^\/favorites\/?$/i.test(pathname)) {
     return { kind: 'favorites' }
   }
@@ -3458,7 +3494,10 @@ function parseRoute(pathname: string): Route {
     }
   }
 
-  return { kind: 'home' }
+  return {
+    kind: 'home',
+    nsfw: false,
+  }
 }
 
 function normalizeSubredditInput(value: string) {
