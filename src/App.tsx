@@ -1259,7 +1259,7 @@ function ViewerPage({
             : 'Favorites'
   const isGridMode = settings.displayMode === 'grid'
   const chromeVisible = isGridMode ? true : showChrome
-  const dockVisible = chromeVisible || filtersOpen
+  const dockVisible = !isFullscreen
   const isNsfwBlockedRoute =
     !nsfwEnabled &&
     ((route.kind === 'subreddit' && isKnownNsfwSubreddit(route.subreddit)) ||
