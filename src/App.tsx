@@ -12,6 +12,7 @@ import {
   type SetStateAction,
   type SyntheticEvent,
 } from 'react'
+import { flushSync } from 'react-dom'
 import './App.css'
 import {
   curatedNsfw,
@@ -1391,32 +1392,69 @@ function ViewerPage({
   }, [isPaused])
 
   const moveBy = useCallback(
-    (direction: 1 | -1) => {
+    (direction: 1 | -1, options?: { userInitiated?: boolean }) => {
       if (filteredItems.length === 0) return
 
-      revealChrome()
-      setProgress(0)
-      setIsPaused(false)
-      setSoundBlockedItemKey('')
-      setCommentsOpen(false)
-      commentRequestIdRef.current += 1
-      onSettingsChange((current) =>
-        current.muted
-          ? {
-              ...current,
-              muted: false,
-            }
-          : current,
-      )
-      setActiveIndex((current) => {
-        const normalized = Math.min(current, filteredItems.length - 1)
-        const next = normalized + direction
-        if (next < 0) return filteredItems.length - 1
-        if (next >= filteredItems.length) return 0
-        return next
-      })
+      const advance = () => {
+        revealChrome()
+        setProgress(0)
+        setIsPaused(false)
+        setSoundBlockedItemKey('')
+        setCommentsOpen(false)
+        commentRequestIdRef.current += 1
+        onSettingsChange((current) =>
+          current.muted
+            ? {
+                ...current,
+                muted: false,
+              }
+            : current,
+        )
+        setActiveIndex((current) => {
+          const normalized = Math.min(current, filteredItems.length - 1)
+          const next = normalized + direction
+          if (next < 0) return filteredItems.length - 1
+          if (next >= filteredItems.length) return 0
+          return next
+        })
+      }
+
+      if (options?.userInitiated) {
+        flushSync(advance)
+
+        const node = videoRef.current
+        const audioNode = audioRef.current
+        if (!node) return
+
+        node.currentTime = 0
+        node.volume = settings.volume
+        node.muted = audioNode ? true : false
+
+        if (audioNode) {
+          audioNode.currentTime = 0
+          audioNode.volume = settings.volume
+          audioNode.muted = false
+        }
+
+        const playPromise = node.play()
+        if (playPromise) {
+          void playPromise.catch(() => {
+            setIsPaused(true)
+          })
+        }
+
+        if (audioNode) {
+          const audioPlayPromise = audioNode.play()
+          void audioPlayPromise.catch(() => {
+            audioNode.pause()
+          })
+        }
+        return
+      }
+
+      advance()
     },
-    [filteredItems.length, onSettingsChange, revealChrome],
+    [filteredItems.length, onSettingsChange, revealChrome, settings.volume],
   )
 
   const updateDisplayMode = useCallback(
@@ -1889,13 +1927,13 @@ function ViewerPage({
 
       if (event.key === 'ArrowRight') {
         event.preventDefault()
-        moveBy(1)
+        moveBy(1, { userInitiated: true })
         return
       }
 
       if (event.key === 'ArrowLeft') {
         event.preventDefault()
-        moveBy(-1)
+        moveBy(-1, { userInitiated: true })
         return
       }
 
@@ -1969,7 +2007,7 @@ function ViewerPage({
     pointerStartRef.current = null
 
     if (Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY)) {
-      moveBy(deltaX < 0 ? 1 : -1)
+      moveBy(deltaX < 0 ? 1 : -1, { userInitiated: true })
       return
     }
 
@@ -2517,7 +2555,7 @@ function ViewerPage({
             aria-label="Previous item"
             className={`stage-nav stage-nav--prev ${chromeVisible ? 'is-visible' : ''}`}
             type="button"
-            onClick={() => moveBy(-1)}
+            onClick={() => moveBy(-1, { userInitiated: true })}
           >
             ‹
           </button>
@@ -2526,7 +2564,7 @@ function ViewerPage({
             aria-label="Next item"
             className={`stage-nav stage-nav--next ${chromeVisible ? 'is-visible' : ''}`}
             type="button"
-            onClick={() => moveBy(1)}
+            onClick={() => moveBy(1, { userInitiated: true })}
           >
             ›
           </button>
