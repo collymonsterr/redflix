@@ -87,6 +87,11 @@ type PrivacyLockConfig = {
   secretHash: string
   hint: string
 }
+type QuickExitSnapshot = {
+  nsfwEnabled: boolean
+  path: string
+  scrollY: number
+}
 type PrivacyDialogMode = 'closed' | 'setup' | 'manage'
 type OpenSubredditOptions = {
   displayMode?: DisplayMode
@@ -123,6 +128,9 @@ function App() {
     () => !loadStoredValue<PrivacyLockConfig | null>(storageKeys.privacyLock, null),
   )
   const [isQuickExitActive, setIsQuickExitActive] = useState(false)
+  const [quickExitSnapshot, setQuickExitSnapshot] = useState<QuickExitSnapshot | null>(
+    null,
+  )
   const [privacyDialogMode, setPrivacyDialogMode] =
     useState<PrivacyDialogMode>('closed')
   const [storedNsfwEnabled, setStoredNsfwEnabled] = usePersistentState<boolean>(
@@ -367,6 +375,11 @@ function App() {
   }
 
   const activateQuickExit = useCallback(() => {
+    setQuickExitSnapshot({
+      path: buildPathForRoute(route),
+      nsfwEnabled,
+      scrollY: window.scrollY,
+    })
     setIsQuickExitActive(true)
     setPrivacyDialogMode('closed')
 
@@ -376,7 +389,30 @@ function App() {
       window.scrollTo({ top: 0 })
       void exitFullscreenIfNeeded()
     })
+  }, [nsfwEnabled, route, setStoredNsfwEnabled])
+
+  const openSafeHomeFromQuickExit = useCallback(() => {
+    setQuickExitSnapshot(null)
+    setIsQuickExitActive(false)
+    setStoredNsfwEnabled(false)
+    navigateTo('/')
+    window.scrollTo({ top: 0 })
   }, [setStoredNsfwEnabled])
+
+  const returnFromQuickExit = useCallback(() => {
+    if (!quickExitSnapshot) {
+      setIsQuickExitActive(false)
+      return
+    }
+
+    setStoredNsfwEnabled(quickExitSnapshot.nsfwEnabled)
+    setIsQuickExitActive(false)
+    navigateTo(quickExitSnapshot.path)
+
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: quickExitSnapshot.scrollY })
+    })
+  }, [quickExitSnapshot, setStoredNsfwEnabled])
 
   const updateSession = (subreddit: string, nextSession: ViewerSession) => {
     setSessions((current) => ({
@@ -508,7 +544,11 @@ function App() {
   return (
     <div className="app-shell">
       {isQuickExitActive ? (
-        <QuickExitScreen onReturn={() => setIsQuickExitActive(false)} />
+        <QuickExitScreen
+          canReturn={Boolean(quickExitSnapshot)}
+          onOpenSafeHome={openSafeHomeFromQuickExit}
+          onReturnToPrevious={returnFromQuickExit}
+        />
       ) : privacyLock && !isUnlocked ? (
         <LockScreen hint={privacyLock.hint} onUnlock={handleUnlock} />
       ) : (
@@ -1073,14 +1113,18 @@ function PrivacyDialog({
 }
 
 function QuickExitScreen({
-  onReturn,
+  canReturn,
+  onOpenSafeHome,
+  onReturnToPrevious,
 }: {
-  onReturn: () => void
+  canReturn: boolean
+  onOpenSafeHome: () => void
+  onReturnToPrevious: () => void
 }) {
   const safeLinks = ['Photos', 'Animals', 'Space', 'Architecture', 'Travel', 'Home']
 
   return (
-    <main className="quick-exit-shell" onClick={onReturn}>
+    <main className="quick-exit-shell" onClick={onOpenSafeHome}>
       <div className="quick-exit-cover" aria-hidden="true" />
       <section className="quick-exit-home" aria-label="Safe home cover">
         <div className="brand-lockup">
@@ -1098,7 +1142,7 @@ function QuickExitScreen({
               key={label}
               className={`quick-exit-thumb quick-exit-thumb--${index + 1}`}
               type="button"
-              onClick={onReturn}
+              onClick={onOpenSafeHome}
             >
               <span className="quick-exit-thumb-media" aria-hidden="true" />
               <span>{label}</span>
@@ -1108,6 +1152,20 @@ function QuickExitScreen({
 
         <p className="quick-exit-hint">Click anywhere to open the safe home page.</p>
       </section>
+      {canReturn ? (
+        <button
+          aria-label="Return to previous view"
+          className="quick-exit-return"
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation()
+            onReturnToPrevious()
+          }}
+        >
+          <span aria-hidden="true">↩</span>
+          <span>Return</span>
+        </button>
+      ) : null}
     </main>
   )
 }
@@ -2625,7 +2683,7 @@ function ViewerPage({
                 isFullscreen={isFullscreen}
                 isMuted={isSoundEffectivelyMuted}
                 videoRef={videoRef}
-                onAdvance={() => moveBy(1)}
+                onAdvance={() => moveBy(1, { userInitiated: true })}
                 onAudioAvailability={(availability) => {
                   if (!activeItem) return
 
@@ -3772,6 +3830,34 @@ function formatPoster(value: string) {
 function buildSessionTitle(item: ViewerItem) {
   if (!item.galleryIndex || !item.galleryTotal) return item.title
   return `${item.title} (${item.galleryIndex}/${item.galleryTotal})`
+}
+
+function buildPathForRoute(route: Route) {
+  if (route.kind === 'home') {
+    return route.nsfw ? '/nsfw' : '/'
+  }
+
+  if (route.kind === 'favorites') {
+    return '/favorites'
+  }
+
+  if (route.kind === 'cinema') {
+    return '/cinema'
+  }
+
+  if (route.kind === 'following-creators') {
+    return '/following/creators'
+  }
+
+  if (route.kind === 'following-subreddits') {
+    return '/following/subreddits'
+  }
+
+  if (route.kind === 'author') {
+    return `/u/${encodeURIComponent(route.author)}`
+  }
+
+  return `/r/${encodeURIComponent(route.subreddit)}`
 }
 
 function toSessionKey(subreddit: string) {

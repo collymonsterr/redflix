@@ -469,6 +469,31 @@
   color: var(--muted);
 }
 
+.quick-exit-return {
+  position: fixed;
+  right: clamp(16px, 3vw, 28px);
+  bottom: clamp(16px, 3vw, 28px);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.82rem 1rem;
+  font: inherit;
+  color: var(--paper);
+  background: rgba(10, 12, 16, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(22px);
+  cursor: pointer;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+}
+
+.quick-exit-return span:first-child {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
 .lock-card,
 .dialog-card {
   width: min(100%, 28rem);
