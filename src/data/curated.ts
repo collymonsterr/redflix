@@ -164,6 +164,19 @@ export const curatedNsfwSections: CuratedSection[] = [
     ],
   },
   {
+    title: 'Outdoor & Public',
+    subreddits: [
+      'gwpublic',
+      'FlashingGirls',
+      'ChangingRooms',
+      'holdthemoan',
+      'extramile',
+      'CarSexPorn',
+      'PublicSexPorn',
+      'RealPublicNudity',
+    ],
+  },
+  {
     title: 'Body Basics',
     subreddits: [
       'boobs',
@@ -249,6 +262,19 @@ export const curatedNsfwMoreSections: TextSubredditSection[] = [
       'PetiteGoneWild',
       'smallboobs',
       'fitgirls',
+    ],
+  },
+  {
+    title: 'Outdoor & Public',
+    subreddits: [
+      'gwpublic',
+      'FlashingGirls',
+      'ChangingRooms',
+      'holdthemoan',
+      'extramile',
+      'CarSexPorn',
+      'PublicSexPorn',
+      'RealPublicNudity',
     ],
   },
 ]
