@@ -1435,6 +1435,60 @@ function ViewerPage({
       (entry) => entry.toLowerCase() === route.subreddit.toLowerCase(),
     )
 
+  const tryStartSeparateAudio = useCallback(
+    (
+      audioNode: HTMLAudioElement,
+      videoNode: HTMLVideoElement,
+      itemKey: string,
+    ) => {
+      const attemptPlayback = (isRetry: boolean) => {
+        if (audioRef.current !== audioNode || videoRef.current !== videoNode) {
+          return
+        }
+
+        audioNode.muted = false
+        audioNode.volume = settings.volume
+
+        if (Math.abs(audioNode.currentTime - videoNode.currentTime) > 0.35) {
+          audioNode.currentTime = videoNode.currentTime
+        }
+
+        const playPromise = audioNode.play()
+        if (!playPromise) return
+
+        void playPromise.catch(() => {
+          if (!isRetry) {
+            window.setTimeout(() => {
+              attemptPlayback(true)
+            }, 120)
+            return
+          }
+
+          if (
+            audioRef.current === audioNode &&
+            videoRef.current === videoNode &&
+            activeItem?.key === itemKey
+          ) {
+            setSoundBlockedItemKey(itemKey)
+          }
+          audioNode.pause()
+        })
+      }
+
+      if (audioNode.readyState >= 2) {
+        attemptPlayback(false)
+        return
+      }
+
+      const onCanPlay = () => {
+        attemptPlayback(false)
+      }
+
+      audioNode.addEventListener('canplay', onCanPlay, { once: true })
+    },
+    [activeItem?.key, settings.volume],
+  )
+
   const revealChrome = useCallback(() => {
     setShowChrome(true)
 
@@ -1452,6 +1506,14 @@ function ViewerPage({
   const moveBy = useCallback(
     (direction: 1 | -1, options?: { userInitiated?: boolean }) => {
       if (filteredItems.length === 0) return
+      const normalizedIndex = Math.min(safeIndex, filteredItems.length - 1)
+      const nextIndex =
+        normalizedIndex + direction < 0
+          ? filteredItems.length - 1
+          : normalizedIndex + direction >= filteredItems.length
+            ? 0
+            : normalizedIndex + direction
+      const nextItemKey = filteredItems[nextIndex]?.key ?? ''
 
       const advance = () => {
         revealChrome()
@@ -1479,40 +1541,45 @@ function ViewerPage({
 
       if (options?.userInitiated) {
         flushSync(advance)
+        window.requestAnimationFrame(() => {
+          const node = videoRef.current
+          const audioNode = audioRef.current
+          if (!node) return
 
-        const node = videoRef.current
-        const audioNode = audioRef.current
-        if (!node) return
+          node.currentTime = 0
+          node.volume = settings.volume
+          node.muted = audioNode ? true : false
 
-        node.currentTime = 0
-        node.volume = settings.volume
-        node.muted = audioNode ? true : false
+          if (audioNode) {
+            audioNode.currentTime = 0
+            audioNode.volume = settings.volume
+            audioNode.muted = false
+          }
 
-        if (audioNode) {
-          audioNode.currentTime = 0
-          audioNode.volume = settings.volume
-          audioNode.muted = false
-        }
+          const playPromise = node.play()
+          if (playPromise) {
+            void playPromise.catch(() => {
+              setIsPaused(true)
+            })
+          }
 
-        const playPromise = node.play()
-        if (playPromise) {
-          void playPromise.catch(() => {
-            setIsPaused(true)
-          })
-        }
-
-        if (audioNode) {
-          const audioPlayPromise = audioNode.play()
-          void audioPlayPromise.catch(() => {
-            audioNode.pause()
-          })
-        }
+          if (audioNode && nextItemKey) {
+            tryStartSeparateAudio(audioNode, node, nextItemKey)
+          }
+        })
         return
       }
 
       advance()
     },
-    [filteredItems.length, onSettingsChange, revealChrome, settings.volume],
+    [
+      filteredItems,
+      onSettingsChange,
+      revealChrome,
+      safeIndex,
+      settings.volume,
+      tryStartSeparateAudio,
+    ],
   )
 
   const updateDisplayMode = useCallback(
@@ -1587,13 +1654,7 @@ function ViewerPage({
           }
 
           if (audioNode && !isSoundEffectivelyMuted) {
-            const audioPlayPromise = audioNode.play()
-            void audioPlayPromise.catch(() => {
-              if (activeItem) {
-                setSoundBlockedItemKey(activeItem.key)
-              }
-              audioNode.pause()
-            })
+            tryStartSeparateAudio(audioNode, node, activeItem.key)
           }
           return
         }
@@ -1606,7 +1667,7 @@ function ViewerPage({
     }
 
     setIsPaused((current) => !current)
-  }, [activeItem, isSoundEffectivelyMuted, revealChrome, settings.volume])
+  }, [activeItem, isSoundEffectivelyMuted, revealChrome, settings.volume, tryStartSeparateAudio])
 
   const fetchRoutePage = useCallback(
     (pageAfter?: string | null): Promise<ListingPage> => {
@@ -1927,13 +1988,7 @@ function ViewerPage({
     }
 
     if (audioNode && !isSoundEffectivelyMuted) {
-      const audioPlayPromise = audioNode.play()
-      void audioPlayPromise.catch(() => {
-        if (activeItem) {
-          setSoundBlockedItemKey(activeItem.key)
-        }
-        audioNode.pause()
-      })
+      tryStartSeparateAudio(audioNode, node, activeItem.key)
     }
   }, [
     activeItem,
@@ -1945,6 +2000,7 @@ function ViewerPage({
     isSoundEffectivelyMuted,
     settings.muted,
     settings.volume,
+    tryStartSeparateAudio,
   ])
 
   useEffect(() => {
@@ -2179,13 +2235,9 @@ function ViewerPage({
     }
 
     if (audioNode) {
-      const audioPlayPromise = audioNode.play()
-      void audioPlayPromise.catch(() => {
-        if (activeItem) {
-          setSoundBlockedItemKey(activeItem.key)
-        }
-        audioNode.pause()
-      })
+      if (activeItem) {
+        tryStartSeparateAudio(audioNode, node, activeItem.key)
+      }
     }
 
     setIsPaused(false)
