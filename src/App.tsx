@@ -43,6 +43,7 @@ import {
   saveStoredValue,
   storageKeys,
 } from './lib/storage'
+import { LruCache } from './lib/lruCache'
 
 type Route =
   | {
@@ -107,7 +108,7 @@ type OpenAuthorOptions = {
 const MAX_PREVIEW_REQUESTS = 1
 const PREVIEW_ROOT_MARGIN = '240px 0px'
 const previewRequestQueue: Array<() => Promise<void>> = []
-const subredditPreviewCache = new Map<string, Promise<ListingPage>>()
+const subredditPreviewCache = new LruCache<string, Promise<ListingPage>>(120)
 const supplementalNsfwSubreddits = new Set(['petite'])
 let knownNsfwSubreddits = buildKnownNsfwSet(defaultHomepageCurationConfig)
 let activePreviewRequests = 0
@@ -4053,6 +4054,8 @@ function parseRoute(pathname: string): Route {
       author: decodeURIComponent(authorMatch[1]),
     }
   }
+
+  console.warn(`RedFlix: unrecognized path "${pathname}", defaulting to home.`)
 
   return {
     kind: 'home',

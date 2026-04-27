@@ -1,3 +1,5 @@
+import { LruCache } from './lruCache'
+
 export type SortMode = 'hot' | 'day' | 'week' | 'month' | 'year' | 'all'
 export type MediaFilter = 'both' | 'photos' | 'videos'
 export type OrientationFilter = 'both' | 'portrait' | 'landscape'
@@ -161,8 +163,8 @@ type RedditPost = {
   crosspost_parent_list?: RedditPost[]
 }
 
-const listingCache = new Map<string, Promise<ListingPage>>()
-const commentCache = new Map<string, Promise<RedditComment[]>>()
+const listingCache = new LruCache<string, Promise<ListingPage>>(120)
+const commentCache = new LruCache<string, Promise<RedditComment[]>>(60)
 
 const IMAGE_EXTENSIONS = /\.(png|jpe?g|gif|bmp|webp)$/i
 const VIDEO_EXTENSIONS = /\.(mp4|webm|mov|m4v)$/i
@@ -782,6 +784,7 @@ function normalizeExternalMedia(post: RedditPost, mediaUrl: string) {
     }
   }
 
+  // gfycat.com shut down in 2023; attempt redgifs redirect for migrated content only
   if (host === 'gfycat.com') {
     const slug = path.split('/').filter(Boolean).pop()
     if (!slug) return null
