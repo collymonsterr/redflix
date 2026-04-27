@@ -2,6 +2,7 @@ export const storageKeys = {
   audioDefaultsVersion: 'redditp-next:audio-defaults-version',
   followedCreators: 'redditp-next:followed-creators',
   followedSubreddits: 'redditp-next:followed-subreddits',
+  homepageCuration: 'redditp-next:homepage-curation',
   privacyLock: 'redditp-next:privacy-lock',
   nsfwEnabled: 'redditp-next:nsfw-enabled',
   savedSubreddits: 'redditp-next:saved-subreddits',

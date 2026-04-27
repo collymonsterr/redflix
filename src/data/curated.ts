@@ -14,6 +14,16 @@ export type TextSubredditSection = {
   subreddits: string[]
 }
 
+export type HomepageCurationConfig = {
+  nsfwLandscapeShowcase: LandscapeVideoShowcase[]
+  nsfwMoreSections: TextSubredditSection[]
+  nsfwPortraitShowcase: LandscapeVideoShowcase[]
+  nsfwSections: CuratedSection[]
+  sfwLandscapeShowcase: LandscapeVideoShowcase[]
+  sfwPortraitShowcase: LandscapeVideoShowcase[]
+  sfwSections: CuratedSection[]
+}
+
 export const curatedSfwSections: CuratedSection[] = [
   {
     title: 'Start Here',
@@ -439,3 +449,13 @@ export const curatedNsfw = flattenSections([
   ...curatedNsfwSections,
   ...curatedNsfwMoreSections,
 ])
+
+export const defaultHomepageCurationConfig: HomepageCurationConfig = {
+  nsfwLandscapeShowcase: nsfwLandscapeVideoShowcase,
+  nsfwMoreSections: curatedNsfwMoreSections,
+  nsfwPortraitShowcase: nsfwPortraitVideoShowcase,
+  nsfwSections: curatedNsfwSections,
+  sfwLandscapeShowcase: landscapeVideoShowcase,
+  sfwPortraitShowcase: portraitVideoShowcase,
+  sfwSections: curatedSfwSections,
+}

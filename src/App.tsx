@@ -15,15 +15,12 @@ import {
 import { flushSync } from 'react-dom'
 import './App.css'
 import {
-  curatedNsfw,
   curatedNsfwCinemaSources,
-  curatedNsfwMoreSections,
-  curatedNsfwSections,
-  curatedSfwSections,
-  landscapeVideoShowcase,
-  nsfwLandscapeVideoShowcase,
-  nsfwPortraitVideoShowcase,
-  portraitVideoShowcase,
+  defaultHomepageCurationConfig,
+  type CuratedSection,
+  type HomepageCurationConfig,
+  type LandscapeVideoShowcase,
+  type TextSubredditSection,
 } from './data/curated'
 import {
   applyEmbedPlaybackPreferences,
@@ -112,6 +109,7 @@ const PREVIEW_ROOT_MARGIN = '240px 0px'
 const previewRequestQueue: Array<() => Promise<void>> = []
 const subredditPreviewCache = new Map<string, Promise<ListingPage>>()
 const supplementalNsfwSubreddits = new Set(['petite'])
+let knownNsfwSubreddits = buildKnownNsfwSet(defaultHomepageCurationConfig)
 let activePreviewRequests = 0
 
 function App() {
@@ -127,6 +125,7 @@ function App() {
   const [isUnlocked, setIsUnlocked] = useState(
     () => !loadStoredValue<PrivacyLockConfig | null>(storageKeys.privacyLock, null),
   )
+  const [isCurationEditorOpen, setIsCurationEditorOpen] = useState(false)
   const [isQuickExitActive, setIsQuickExitActive] = useState(false)
   const [quickExitSnapshot, setQuickExitSnapshot] = useState<QuickExitSnapshot | null>(
     null,
@@ -166,6 +165,11 @@ function App() {
     defaultViewerSettings,
     normalizeViewerSettings,
   )
+  const [homepageCuration, setHomepageCuration] = usePersistentState<HomepageCurationConfig>(
+    storageKeys.homepageCuration,
+    defaultHomepageCurationConfig,
+    normalizeHomepageCurationConfig,
+  )
   const nsfwEnabled = route.kind === 'home' ? route.nsfw : storedNsfwEnabled
 
   useEffect(() => {
@@ -181,6 +185,10 @@ function App() {
     if (route.kind !== 'home') return
     setStoredNsfwEnabled(route.nsfw)
   }, [route, setStoredNsfwEnabled])
+
+  useEffect(() => {
+    syncKnownNsfwSubreddits(homepageCuration)
+  }, [homepageCuration])
 
   useEffect(() => {
     if (audioDefaultsVersion >= 1) return
@@ -374,6 +382,11 @@ function App() {
     setPrivacyDialogMode(privacyLock ? 'manage' : 'setup')
   }
 
+  const handleSaveHomepageCuration = (nextConfig: HomepageCurationConfig) => {
+    setHomepageCuration(nextConfig)
+    setIsCurationEditorOpen(false)
+  }
+
   const activateQuickExit = useCallback(() => {
     setQuickExitSnapshot({
       path: buildPathForRoute(route),
@@ -560,6 +573,7 @@ function App() {
               followedCreatorCount={followedCreatorCount}
               followedSubredditCount={followedSubredditCount}
               hasPrivacyLock={Boolean(privacyLock)}
+              homepageCuration={homepageCuration}
               nsfwEnabled={nsfwEnabled}
               savedSubreddits={savedSubreddits}
               seenCount={seenItems.length}
@@ -571,6 +585,7 @@ function App() {
               onOpenFollowingSubreddits={openFollowingSubreddits}
               onOpenLandscapeSubreddit={openLandscapeSubreddit}
               onOpenPortraitSubreddit={openPortraitSubreddit}
+              onOpenCurationEditor={() => setIsCurationEditorOpen(true)}
               onOpenPrivacyDialog={openPrivacyDialog}
               onOpenSubreddit={openSubreddit}
               onToggleNsfw={toggleNsfw}
@@ -622,6 +637,15 @@ function App() {
           onSetup={handleSetupPrivacyLock}
         />
       ) : null}
+
+      {isCurationEditorOpen ? (
+        <HomepageCurationDialog
+          config={homepageCuration}
+          nsfwEnabled={nsfwEnabled}
+          onClose={() => setIsCurationEditorOpen(false)}
+          onSave={handleSaveHomepageCuration}
+        />
+      ) : null}
     </div>
   )
 }
@@ -632,6 +656,7 @@ function LandingPage({
   followedCreatorCount,
   followedSubredditCount,
   hasPrivacyLock,
+  homepageCuration,
   nsfwEnabled,
   savedSubreddits,
   seenCount,
@@ -641,6 +666,7 @@ function LandingPage({
   onOpenFavorites,
   onOpenFollowingCreators,
   onOpenFollowingSubreddits,
+  onOpenCurationEditor,
   onOpenLandscapeSubreddit,
   onOpenPortraitSubreddit,
   onOpenPrivacyDialog,
@@ -652,6 +678,7 @@ function LandingPage({
   followedCreatorCount: number
   followedSubredditCount: number
   hasPrivacyLock: boolean
+  homepageCuration: HomepageCurationConfig
   nsfwEnabled: boolean
   savedSubreddits: string[]
   seenCount: number
@@ -661,6 +688,7 @@ function LandingPage({
   onOpenFavorites: () => void
   onOpenFollowingCreators: () => void
   onOpenFollowingSubreddits: () => void
+  onOpenCurationEditor: () => void
   onOpenLandscapeSubreddit: (value: string) => void
   onOpenPortraitSubreddit: (value: string) => void
   onOpenPrivacyDialog: () => void
@@ -668,13 +696,15 @@ function LandingPage({
   onToggleNsfw: () => void
 }) {
   const [searchValue, setSearchValue] = useState('')
-  const discoverySections = nsfwEnabled ? curatedNsfwSections : curatedSfwSections
+  const discoverySections = nsfwEnabled
+    ? homepageCuration.nsfwSections
+    : homepageCuration.sfwSections
   const activeLandscapeShowcase = nsfwEnabled
-    ? nsfwLandscapeVideoShowcase
-    : landscapeVideoShowcase
+    ? homepageCuration.nsfwLandscapeShowcase
+    : homepageCuration.sfwLandscapeShowcase
   const activePortraitShowcase = nsfwEnabled
-    ? nsfwPortraitVideoShowcase
-    : portraitVideoShowcase
+    ? homepageCuration.nsfwPortraitShowcase
+    : homepageCuration.sfwPortraitShowcase
   const placeholder = nsfwEnabled
     ? 'Open /r/gonewild, /r/NSFW_GIF, /r/RealGirls...'
     : 'Open /r/pics, /r/gifs, /u/example...'
@@ -744,6 +774,9 @@ function LandingPage({
           </button>
           <button className="viewer-link muted" type="button" onClick={onOpenPrivacyDialog}>
             {hasPrivacyLock ? 'Privacy' : 'Set lock'}
+          </button>
+          <button className="viewer-link muted" type="button" onClick={onOpenCurationEditor}>
+            Edit home
           </button>
           <label className="toggle-pill">
             <span>NSFW</span>
@@ -867,7 +900,7 @@ function LandingPage({
 
       {nsfwEnabled ? (
         <TextSubredditDirectory
-          sections={curatedNsfwMoreSections}
+          sections={homepageCuration.nsfwMoreSections}
           onOpenSubreddit={onOpenSubreddit}
         />
       ) : null}
@@ -1109,6 +1142,385 @@ function PrivacyDialog({
         )}
       </section>
     </div>
+  )
+}
+
+function HomepageCurationDialog({
+  config,
+  nsfwEnabled,
+  onClose,
+  onSave,
+}: {
+  config: HomepageCurationConfig
+  nsfwEnabled: boolean
+  onClose: () => void
+  onSave: (config: HomepageCurationConfig) => void
+}) {
+  const [activeTab, setActiveTab] = useState<'sfw' | 'nsfw'>(nsfwEnabled ? 'nsfw' : 'sfw')
+  const [draft, setDraft] = useState<HomepageCurationConfig>(() =>
+    cloneHomepageCurationConfig(config),
+  )
+
+  const updateDraft = <K extends keyof HomepageCurationConfig>(
+    key: K,
+    value: HomepageCurationConfig[K],
+  ) => {
+    setDraft((current) => ({
+      ...current,
+      [key]: value,
+    }))
+  }
+
+  return (
+    <div className="dialog-backdrop" role="presentation">
+      <section
+        aria-modal="true"
+        className="dialog-card curation-dialog"
+        role="dialog"
+        aria-label="Homepage curation editor"
+      >
+        <div className="dialog-header">
+          <div>
+            <p className="eyebrow">Admin</p>
+            <h2>Edit homepage curation</h2>
+          </div>
+          <button className="ghost-link" type="button" onClick={onClose}>
+            Close
+          </button>
+        </div>
+
+        <p className="lock-copy">
+          Change the homepage sections locally on this device. Save when you are happy
+          with the layout.
+        </p>
+
+        <div className="curation-tab-row" role="tablist" aria-label="Homepage mode">
+          <button
+            className={activeTab === 'sfw' ? 'is-active' : ''}
+            type="button"
+            onClick={() => setActiveTab('sfw')}
+          >
+            SFW home
+          </button>
+          <button
+            className={activeTab === 'nsfw' ? 'is-active' : ''}
+            type="button"
+            onClick={() => setActiveTab('nsfw')}
+          >
+            NSFW home
+          </button>
+        </div>
+
+        <div className="curation-scroll">
+          {activeTab === 'sfw' ? (
+            <>
+              <SectionCollectionEditor
+                description="The main homepage rows of subreddit cards."
+                sections={draft.sfwSections}
+                title="Homepage sections"
+                onChange={(sections) => updateDraft('sfwSections', sections)}
+              />
+              <ShowcaseCollectionEditor
+                description="Wide autoplay cards at the top of the homepage."
+                items={draft.sfwLandscapeShowcase}
+                title="Landscape video"
+                onChange={(items) => updateDraft('sfwLandscapeShowcase', items)}
+              />
+              <ShowcaseCollectionEditor
+                description="Portrait-first video cards for mobile-style clips."
+                items={draft.sfwPortraitShowcase}
+                title="Portrait video"
+                onChange={(items) => updateDraft('sfwPortraitShowcase', items)}
+              />
+            </>
+          ) : (
+            <>
+              <SectionCollectionEditor
+                description="The main NSFW homepage rows of subreddit cards."
+                sections={draft.nsfwSections}
+                title="Homepage sections"
+                onChange={(sections) => updateDraft('nsfwSections', sections)}
+              />
+              <ShowcaseCollectionEditor
+                description="Wide adult video cards shown above the gallery rows."
+                items={draft.nsfwLandscapeShowcase}
+                title="Landscape video"
+                onChange={(items) => updateDraft('nsfwLandscapeShowcase', items)}
+              />
+              <ShowcaseCollectionEditor
+                description="Portrait-first adult clips for the mobile-style row."
+                items={draft.nsfwPortraitShowcase}
+                title="Portrait video"
+                onChange={(items) => updateDraft('nsfwPortraitShowcase', items)}
+              />
+              <SectionCollectionEditor
+                description="The text-only directory near the bottom of the NSFW homepage."
+                sections={draft.nsfwMoreSections}
+                title="Text directory"
+                onChange={(sections) => updateDraft('nsfwMoreSections', sections)}
+              />
+            </>
+          )}
+        </div>
+
+        <div className="dialog-actions dialog-actions--spread">
+          <button
+            className="subtle-button"
+            type="button"
+            onClick={() =>
+              setDraft(cloneHomepageCurationConfig(defaultHomepageCurationConfig))
+            }
+          >
+            Reset to defaults
+          </button>
+          <div className="dialog-actions">
+            <button className="subtle-button" type="button" onClick={onClose}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => onSave(normalizeHomepageCurationConfig(draft))}
+            >
+              Save changes
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+  )
+}
+
+function SectionCollectionEditor({
+  description,
+  sections,
+  title,
+  onChange,
+}: {
+  description: string
+  sections: Array<{ title: string; subreddits: string[] }>
+  title: string
+  onChange: (sections: Array<{ title: string; subreddits: string[] }>) => void
+}) {
+  const updateSection = (
+    index: number,
+    updater: (section: { title: string; subreddits: string[] }) => {
+      title: string
+      subreddits: string[]
+    },
+  ) => {
+    onChange(
+      sections.map((section, sectionIndex) =>
+        sectionIndex === index ? updater(section) : section,
+      ),
+    )
+  }
+
+  return (
+    <section className="curation-group">
+      <div className="curation-group-copy">
+        <h3>{title}</h3>
+        <p>{description}</p>
+      </div>
+
+      <div className="curation-stack">
+        {sections.map((section, index) => (
+          <article key={`${section.title}-${index}`} className="curation-card">
+            <div className="curation-card-actions">
+              <label className="field-stack">
+                <span>Section title</span>
+                <input
+                  type="text"
+                  value={section.title}
+                  onChange={(event) =>
+                    updateSection(index, (current) => ({
+                      ...current,
+                      title: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+              <div className="curation-button-row">
+                <button
+                  className="subtle-button"
+                  disabled={index === 0}
+                  type="button"
+                  onClick={() => onChange(moveArrayItem(sections, index, -1))}
+                >
+                  Up
+                </button>
+                <button
+                  className="subtle-button"
+                  disabled={index === sections.length - 1}
+                  type="button"
+                  onClick={() => onChange(moveArrayItem(sections, index, 1))}
+                >
+                  Down
+                </button>
+                <button
+                  className="danger-button"
+                  type="button"
+                  onClick={() => onChange(sections.filter((_, sectionIndex) => sectionIndex !== index))}
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+
+            <label className="field-stack">
+              <span>Subreddits</span>
+              <textarea
+                rows={3}
+                value={section.subreddits.join(', ')}
+                onChange={(event) =>
+                  updateSection(index, (current) => ({
+                    ...current,
+                    subreddits: parseSubredditDraft(event.target.value),
+                  }))
+                }
+              />
+            </label>
+          </article>
+        ))}
+      </div>
+
+      <button
+        className="subtle-button curation-add-button"
+        type="button"
+        onClick={() =>
+          onChange([
+            ...sections,
+            {
+              title: 'New section',
+              subreddits: [],
+            },
+          ])
+        }
+      >
+        Add section
+      </button>
+    </section>
+  )
+}
+
+function ShowcaseCollectionEditor({
+  description,
+  items,
+  title,
+  onChange,
+}: {
+  description: string
+  items: LandscapeVideoShowcase[]
+  title: string
+  onChange: (items: LandscapeVideoShowcase[]) => void
+}) {
+  const updateItem = (
+    index: number,
+    updater: (item: LandscapeVideoShowcase) => LandscapeVideoShowcase,
+  ) => {
+    onChange(items.map((item, itemIndex) => (itemIndex === index ? updater(item) : item)))
+  }
+
+  return (
+    <section className="curation-group">
+      <div className="curation-group-copy">
+        <h3>{title}</h3>
+        <p>{description}</p>
+      </div>
+
+      <div className="curation-stack">
+        {items.map((item, index) => (
+          <article key={`${item.subreddit}-${index}`} className="curation-card">
+            <div className="curation-card-actions">
+              <label className="field-stack">
+                <span>Card title</span>
+                <input
+                  type="text"
+                  value={item.title}
+                  onChange={(event) =>
+                    updateItem(index, (current) => ({
+                      ...current,
+                      title: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+              <div className="curation-button-row">
+                <button
+                  className="subtle-button"
+                  disabled={index === 0}
+                  type="button"
+                  onClick={() => onChange(moveArrayItem(items, index, -1))}
+                >
+                  Up
+                </button>
+                <button
+                  className="subtle-button"
+                  disabled={index === items.length - 1}
+                  type="button"
+                  onClick={() => onChange(moveArrayItem(items, index, 1))}
+                >
+                  Down
+                </button>
+                <button
+                  className="danger-button"
+                  type="button"
+                  onClick={() => onChange(items.filter((_, itemIndex) => itemIndex !== index))}
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+
+            <div className="curation-showcase-grid">
+              <label className="field-stack">
+                <span>Subreddit</span>
+                <input
+                  type="text"
+                  value={item.subreddit}
+                  onChange={(event) =>
+                    updateItem(index, (current) => ({
+                      ...current,
+                      subreddit: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+
+              <label className="field-stack">
+                <span>Subtitle</span>
+                <input
+                  type="text"
+                  value={item.subtitle}
+                  onChange={(event) =>
+                    updateItem(index, (current) => ({
+                      ...current,
+                      subtitle: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <button
+        className="subtle-button curation-add-button"
+        type="button"
+        onClick={() =>
+          onChange([
+            ...items,
+            {
+              title: 'New card',
+              subtitle: '',
+              subreddit: '',
+            },
+          ])
+        }
+      >
+        Add card
+      </button>
+    </section>
   )
 }
 
@@ -3841,14 +4253,201 @@ function mergeItems(current: ViewerItem[], incoming: ViewerItem[]) {
   return merged
 }
 
+function cloneSectionCollection(
+  sections: CuratedSection[] | TextSubredditSection[],
+): CuratedSection[] {
+  return sections.map((section) => ({
+    ...section,
+    subreddits: [...section.subreddits],
+  }))
+}
+
+function cloneHomepageCurationConfig(
+  config: HomepageCurationConfig,
+): HomepageCurationConfig {
+  return {
+    nsfwLandscapeShowcase: config.nsfwLandscapeShowcase.map((item) => ({ ...item })),
+    nsfwMoreSections: config.nsfwMoreSections.map((section) => ({
+      ...section,
+      subreddits: [...section.subreddits],
+    })),
+    nsfwPortraitShowcase: config.nsfwPortraitShowcase.map((item) => ({ ...item })),
+    nsfwSections: config.nsfwSections.map((section) => ({
+      ...section,
+      subreddits: [...section.subreddits],
+    })),
+    sfwLandscapeShowcase: config.sfwLandscapeShowcase.map((item) => ({ ...item })),
+    sfwPortraitShowcase: config.sfwPortraitShowcase.map((item) => ({ ...item })),
+    sfwSections: config.sfwSections.map((section) => ({
+      ...section,
+      subreddits: [...section.subreddits],
+    })),
+  }
+}
+
+function normalizeSectionDraft(
+  value: unknown,
+  fallback: CuratedSection[] | TextSubredditSection[],
+) {
+  if (!Array.isArray(value)) {
+    return cloneSectionCollection(fallback)
+  }
+
+  const normalized = value
+    .map((entry) => {
+      if (!entry || typeof entry !== 'object') return null
+
+      const title =
+        typeof (entry as { title?: unknown }).title === 'string'
+          ? (entry as { title: string }).title.trim()
+          : ''
+      const rawSubreddits = Array.isArray((entry as { subreddits?: unknown }).subreddits)
+        ? (entry as { subreddits: unknown[] }).subreddits
+        : []
+      const subreddits = rawSubreddits
+        .map((item) => (typeof item === 'string' ? normalizeSubredditInput(item) : ''))
+        .filter(Boolean)
+
+      return title || subreddits.length > 0
+        ? {
+            title: title || 'Untitled section',
+            subreddits,
+          }
+        : null
+    })
+    .filter((entry): entry is CuratedSection => Boolean(entry))
+
+  return normalized.length > 0 ? normalized : cloneSectionCollection(fallback)
+}
+
+function normalizeShowcaseDraft(
+  value: unknown,
+  fallback: LandscapeVideoShowcase[],
+) {
+  if (!Array.isArray(value)) {
+    return fallback.map((item) => ({ ...item }))
+  }
+
+  const normalized = value
+    .map((entry) => {
+      if (!entry || typeof entry !== 'object') return null
+
+      const subreddit =
+        typeof (entry as { subreddit?: unknown }).subreddit === 'string'
+          ? normalizeSubredditInput((entry as { subreddit: string }).subreddit)
+          : ''
+
+      if (!subreddit) return null
+
+      const title =
+        typeof (entry as { title?: unknown }).title === 'string'
+          ? (entry as { title: string }).title.trim()
+          : ''
+      const subtitle =
+        typeof (entry as { subtitle?: unknown }).subtitle === 'string'
+          ? (entry as { subtitle: string }).subtitle.trim()
+          : ''
+
+      return {
+        title: title || `/r/${subreddit}`,
+        subtitle,
+        subreddit,
+      }
+    })
+    .filter((entry): entry is LandscapeVideoShowcase => Boolean(entry))
+
+  return normalized.length > 0 ? normalized : fallback.map((item) => ({ ...item }))
+}
+
+function normalizeHomepageCurationConfig(
+  value: HomepageCurationConfig | unknown,
+): HomepageCurationConfig {
+  const parsed = value && typeof value === 'object' ? value : {}
+
+  return {
+    nsfwLandscapeShowcase: normalizeShowcaseDraft(
+      (parsed as { nsfwLandscapeShowcase?: unknown }).nsfwLandscapeShowcase,
+      defaultHomepageCurationConfig.nsfwLandscapeShowcase,
+    ),
+    nsfwMoreSections: normalizeSectionDraft(
+      (parsed as { nsfwMoreSections?: unknown }).nsfwMoreSections,
+      defaultHomepageCurationConfig.nsfwMoreSections,
+    ),
+    nsfwPortraitShowcase: normalizeShowcaseDraft(
+      (parsed as { nsfwPortraitShowcase?: unknown }).nsfwPortraitShowcase,
+      defaultHomepageCurationConfig.nsfwPortraitShowcase,
+    ),
+    nsfwSections: normalizeSectionDraft(
+      (parsed as { nsfwSections?: unknown }).nsfwSections,
+      defaultHomepageCurationConfig.nsfwSections,
+    ),
+    sfwLandscapeShowcase: normalizeShowcaseDraft(
+      (parsed as { sfwLandscapeShowcase?: unknown }).sfwLandscapeShowcase,
+      defaultHomepageCurationConfig.sfwLandscapeShowcase,
+    ),
+    sfwPortraitShowcase: normalizeShowcaseDraft(
+      (parsed as { sfwPortraitShowcase?: unknown }).sfwPortraitShowcase,
+      defaultHomepageCurationConfig.sfwPortraitShowcase,
+    ),
+    sfwSections: normalizeSectionDraft(
+      (parsed as { sfwSections?: unknown }).sfwSections,
+      defaultHomepageCurationConfig.sfwSections,
+    ),
+  }
+}
+
+function parseSubredditDraft(value: string) {
+  const entries = value
+    .split(/[,\n]/)
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+
+  const seen = new Set<string>()
+
+  return entries.filter((entry) => {
+    const key = entry.toLowerCase()
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
+function moveArrayItem<T>(items: T[], index: number, direction: -1 | 1) {
+  const target = index + direction
+  if (target < 0 || target >= items.length) return items
+
+  const next = [...items]
+  const [item] = next.splice(index, 1)
+  next.splice(target, 0, item)
+  return next
+}
+
+function buildKnownNsfwSet(config: HomepageCurationConfig) {
+  const entries = [
+    ...config.nsfwSections.flatMap((section) => section.subreddits),
+    ...config.nsfwMoreSections.flatMap((section) => section.subreddits),
+    ...config.nsfwLandscapeShowcase.map((item) => item.subreddit),
+    ...config.nsfwPortraitShowcase.map((item) => item.subreddit),
+    ...curatedNsfwCinemaSources,
+  ]
+
+  return new Set(
+    entries
+      .map((entry) => normalizeSubredditInput(entry).toLowerCase())
+      .filter(Boolean),
+  )
+}
+
+function syncKnownNsfwSubreddits(config: HomepageCurationConfig) {
+  knownNsfwSubreddits = buildKnownNsfwSet(config)
+  subredditPreviewCache.clear()
+}
+
 function isKnownNsfwSubreddit(value: string) {
   const normalized = normalizeSubredditInput(value).toLowerCase()
   if (!normalized) return false
 
-  return (
-    curatedNsfw.some((entry) => entry.toLowerCase() === normalized) ||
-    supplementalNsfwSubreddits.has(normalized)
-  )
+  return knownNsfwSubreddits.has(normalized) || supplementalNsfwSubreddits.has(normalized)
 }
 
 function formatDuration(valueInSeconds: number) {
