@@ -53,6 +53,7 @@ The Reddit listing proxy lives at `api/reddit/listing.ts` and uses shared logic 
 
 ## Documentation
 
+- [Agent guidance](AGENTS.md)
 - [Current app state](docs/CURRENT-STATE.md)
 - [Deployment and troubleshooting](docs/DEPLOYMENT.md)
 - [Homepage curation editor](docs/HOMEPAGE-CURATION.md)

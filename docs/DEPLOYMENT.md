@@ -38,12 +38,15 @@ Recommended user agent format:
 RedFlix/0.1 by u/your_reddit_username
 ```
 
+If `REDDIT_USER_AGENT` is missing, the proxy falls back to a generic placeholder user agent. Production should still always set the real environment variable.
+
 ## How the Reddit Proxy Works
 
 - `api/reddit/listing.ts` validates incoming requests and builds the upstream Reddit URL.
 - `server/redditProxy.ts` handles OAuth token fetching, request forwarding, and short-lived response caching.
 - With credentials present, the proxy uses `oauth.reddit.com`.
 - Without credentials, it falls back to `api.reddit.com`, which is more likely to be blocked on hosted platforms.
+- The client-side listing, comment, and preview request caches are bounded so they do not grow forever during long sessions.
 
 ## Common Problems
 
