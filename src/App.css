@@ -751,6 +751,13 @@
   z-index: 12;
   display: grid;
   gap: 8px;
+  pointer-events: none;
+  transform: translateY(-6px);
+}
+
+.viewer-dock.is-visible {
+  pointer-events: auto;
+  transform: none;
 }
 
 .viewer-dock-main,
@@ -890,7 +897,6 @@
   padding: 0;
 }
 
-.viewer-shell.is-fullscreen .viewer-dock,
 .viewer-shell.is-fullscreen .stage-nav,
 .viewer-shell.is-fullscreen .stage-footer,
 .viewer-shell.is-fullscreen .progress-track {

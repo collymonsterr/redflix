@@ -25,14 +25,14 @@ This document is the quickest snapshot of what RedFlix does today.
 - `Viewer` mode shows a single active post with keyboard and on-screen navigation.
 - `Grid` mode shows a responsive gallery that expands to fit larger monitors.
 - `Cinema` is a preselected autoplay-focused mode for video browsing.
-- Fullscreen is media-first and hides the main chrome while active.
+- Fullscreen is media-first and keeps the main chrome hidden until hover or interaction.
 
 ## Viewer Features
 
 - Auto-advance with selectable timing.
 - Image, GIF, and video support with Reddit and third-party sources where available.
 - Attempted autoplay with sound when moving to the next direct video.
-- Hover controls in fullscreen for play/pause and mute.
+- Hover controls in fullscreen for play/pause, mute, and the top viewer dock.
 - `Comments` button for lightweight comment preview before leaving the app.
 - `Reddit thread` button for opening the original Reddit post.
 - `View creator` flow for creator-focused browsing.
