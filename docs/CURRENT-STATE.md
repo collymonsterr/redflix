@@ -31,6 +31,7 @@ This document is the quickest snapshot of what RedFlix does today.
 
 - Auto-advance with selectable timing.
 - Image, GIF, and video support with Reddit and third-party sources where available.
+- `Hide seen` is persisted locally and can pull deeper pages to avoid getting stuck on already-viewed posts.
 - Attempted autoplay with sound when moving to the next direct video.
 - Hover controls in fullscreen for play/pause, mute, and the top viewer dock.
 - `Comments` button for lightweight comment preview before leaving the app.

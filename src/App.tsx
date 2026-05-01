@@ -1783,6 +1783,27 @@ function ViewerPage({
       ),
     [effectiveSelectedTag, favorites, nsfwEnabled, route, seenSet, settings, sourceItems],
   )
+  const filteredItemsIgnoringSeen = useMemo(
+    () =>
+      sourceItems.filter((item) =>
+        matchesViewerFilters({
+          item,
+          nsfwEnabled,
+          seenSet,
+          settings: {
+            ...settings,
+            hideSeen: false,
+          },
+        }) &&
+        matchesFavoriteTag({
+          favorites,
+          item,
+          route,
+          selectedTag: effectiveSelectedTag,
+        }),
+      ),
+    [effectiveSelectedTag, favorites, nsfwEnabled, route, seenSet, settings, sourceItems],
+  )
   const relaxedFilteredItems = useMemo(
     () =>
       sourceItems.filter((item) =>
@@ -2206,7 +2227,8 @@ function ViewerPage({
       error ||
       sourceItems.length === 0 ||
       filteredItems.length > 0 ||
-      relaxedFilteredItems.length === 0
+      relaxedFilteredItems.length === 0 ||
+      (settings.hideSeen && filteredItemsIgnoringSeen.length > 0)
     ) {
       return
     }
@@ -2236,10 +2258,60 @@ function ViewerPage({
   }, [
     error,
     filteredItems.length,
+    filteredItemsIgnoringSeen.length,
     isLoading,
     onSettingsChange,
     relaxedFilteredItems.length,
+    settings.hideSeen,
     sourceItems.length,
+  ])
+
+  useEffect(() => {
+    if (isGridMode || isFavoritesRoute) return
+
+    if (
+      !settings.hideSeen ||
+      !after ||
+      isLoading ||
+      isLoadingMoreRef.current ||
+      filteredItems.length > 0 ||
+      filteredItemsIgnoringSeen.length === 0
+    ) {
+      return
+    }
+
+    let ignore = false
+    isLoadingMoreRef.current = true
+
+    fetchRoutePage(after)
+      .then((page) => {
+        if (ignore) return
+        setItems((current) => mergeItems(current, page.items))
+        setAfter(page.after)
+      })
+      .catch((fetchError) => {
+        if (ignore) return
+        setError(fetchError instanceof Error ? fetchError.message : 'Unknown error')
+      })
+      .finally(() => {
+        if (!ignore) {
+          isLoadingMoreRef.current = false
+        }
+      })
+
+    return () => {
+      ignore = true
+      isLoadingMoreRef.current = false
+    }
+  }, [
+    after,
+    fetchRoutePage,
+    filteredItems.length,
+    filteredItemsIgnoringSeen.length,
+    isFavoritesRoute,
+    isGridMode,
+    isLoading,
+    settings.hideSeen,
   ])
 
   useEffect(() => {
