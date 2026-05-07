@@ -3405,11 +3405,13 @@ function ViewerPage({
 
               <div className="stage-footer-actions">
                 <button
-                  className={activeFavorite ? 'is-active' : ''}
+                  aria-label={activeFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                  className={`favorite-icon-button${activeFavorite ? ' is-active' : ''}`}
                   type="button"
                   onClick={() => onToggleFavorite(activeItem)}
+                  title={activeFavorite ? 'Remove from favorites' : 'Add to favorites'}
                 >
-                  {activeFavorite ? 'Saved' : 'Favorite'}
+                  <HeartIcon />
                 </button>
                 <button
                   className={activeCreatorFollowed ? 'is-active' : ''}
@@ -3624,6 +3626,21 @@ function ExitFullscreenIcon() {
   return (
     <svg aria-hidden="true" className="stroke-icon" viewBox="0 0 24 24">
       <path d="M10 5v5H5M14 5v5h5M19 14h-5v5M10 19v-5H5" />
+    </svg>
+  )
+}
+
+function HeartIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path
+        d="M12 20.5 4.9 13.9a4.8 4.8 0 0 1 6.8-6.8L12 7.6l.3-.5a4.8 4.8 0 0 1 6.8 6.8L12 20.5Z"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.9"
+      />
     </svg>
   )
 }
