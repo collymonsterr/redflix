@@ -34,6 +34,7 @@ This document is the quickest snapshot of what RedFlix does today.
 - Freshness filtering is built around local seen timestamps with `All`, `Today`, `3d`, and `7d` windows.
 - The viewer defaults to a `3d` freshness cooldown so returning visits stay fresher without abandoning quality-first sorting.
 - When the current page is too stale, the viewer can pull deeper Reddit pages automatically to top up fresh results.
+- Reddit-style ranking controls such as `Hot`, `Top day`, `Top week`, `Top month`, and `Top all` live in the expanded filters row.
 - Attempted autoplay with sound when moving to the next direct video.
 - Hover controls in fullscreen for play/pause, mute, and the top viewer dock.
 - `Comments` button for lightweight comment preview before leaving the app.

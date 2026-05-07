@@ -1761,19 +1761,19 @@ function ViewerPage({
       ? []
       : route.kind === 'author' || route.kind === 'following-creators'
       ? [
-          ['day', 'Day'],
-          ['week', 'Week'],
-          ['month', 'Month'],
-          ['year', 'Year'],
-          ['all', 'All'],
+          ['day', 'Top day'],
+          ['week', 'Top week'],
+          ['month', 'Top month'],
+          ['year', 'Top year'],
+          ['all', 'Top all'],
         ]
       : [
           ['hot', 'Hot'],
-          ['day', 'Day'],
-          ['week', 'Week'],
-          ['month', 'Month'],
-          ['year', 'Year'],
-          ['all', 'All'],
+          ['day', 'Top day'],
+          ['week', 'Top week'],
+          ['month', 'Top month'],
+          ['year', 'Top year'],
+          ['all', 'Top all'],
         ]
   const activeFreshnessWindowDays = settings.freshnessWindowDays
   const isFreshnessActive = activeFreshnessWindowDays > 0
@@ -2869,55 +2869,6 @@ function ViewerPage({
               {filtersOpen ? 'Hide filters' : 'Filters'}
             </button>
 
-            <div className="viewer-shape-switch" role="group" aria-label="Video shape">
-              {(
-                [
-                  ['both', 'All'],
-                  ['landscape', 'Wide'],
-                  ['portrait', 'Tall'],
-                ] as const
-              ).map(([value, label]) => (
-                <button
-                  key={value}
-                  className={settings.orientationFilter === value ? 'is-active' : ''}
-                  type="button"
-                  onClick={() => {
-                    updateSetting('mediaFilter', value === 'both' ? 'both' : 'videos')
-                    updateSetting('orientationFilter', value)
-                  }}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-
-            <div className="viewer-timer-group" role="group" aria-label="Autoplay timing">
-              <button
-                className={`viewer-link ${settings.autoAdvance ? '' : 'muted'}`}
-                type="button"
-                onClick={() => updateSetting('autoAdvance', !settings.autoAdvance)}
-              >
-                {settings.autoAdvance ? 'Auto' : 'Manual'}
-              </button>
-              {[3, 6, 10, 15].map((seconds) => (
-                <button
-                  key={seconds}
-                  className={`viewer-link ${
-                    settings.autoAdvance && settings.imageDelaySeconds === seconds
-                      ? 'is-active'
-                      : 'muted'
-                  }`}
-                  type="button"
-                  onClick={() => {
-                    updateSetting('autoAdvance', true)
-                    updateSetting('imageDelaySeconds', seconds)
-                  }}
-                >
-                  {seconds}s
-                </button>
-              ))}
-            </div>
-
             <details className="viewer-more-menu">
               <summary className="viewer-link muted">More</summary>
               <div className="viewer-more-panel">
@@ -3022,12 +2973,27 @@ function ViewerPage({
 
             {sortOptions.length > 0 ? (
               <FilterGroup
-                label="Sort"
+                label="Reddit"
                 options={sortOptions}
                 value={effectiveSortMode}
                 onChange={(value) => updateSetting('sortMode', value as SortMode)}
               />
             ) : null}
+
+            <FilterGroup
+              label="View"
+              options={[
+                ['both', 'All'],
+                ['landscape', 'Wide'],
+                ['portrait', 'Tall'],
+              ]}
+              value={settings.orientationFilter === 'both' ? 'both' : settings.orientationFilter}
+              onChange={(value) => {
+                const nextValue = value as 'both' | 'portrait' | 'landscape'
+                updateSetting('mediaFilter', nextValue === 'both' ? 'both' : 'videos')
+                updateSetting('orientationFilter', nextValue)
+              }}
+            />
 
             <label className="slider-group compact-slider">
               <span>{settings.maxDuration}s max</span>
@@ -3061,6 +3027,33 @@ function ViewerPage({
                 }}
               />
             </label>
+
+            <div className="viewer-timer-group" role="group" aria-label="Autoplay timing">
+              <button
+                className={`viewer-link ${settings.autoAdvance ? '' : 'muted'}`}
+                type="button"
+                onClick={() => updateSetting('autoAdvance', !settings.autoAdvance)}
+              >
+                {settings.autoAdvance ? 'Auto' : 'Manual'}
+              </button>
+              {[3, 6, 10, 15].map((seconds) => (
+                <button
+                  key={seconds}
+                  className={`viewer-link ${
+                    settings.autoAdvance && settings.imageDelaySeconds === seconds
+                      ? 'is-active'
+                      : 'muted'
+                  }`}
+                  type="button"
+                  onClick={() => {
+                    updateSetting('autoAdvance', true)
+                    updateSetting('imageDelaySeconds', seconds)
+                  }}
+                >
+                  {seconds}s
+                </button>
+              ))}
+            </div>
 
             <FilterGroup
               label="Fresh"
