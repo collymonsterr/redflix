@@ -3,6 +3,7 @@ import { LruCache } from './lruCache'
 export type SortMode = 'hot' | 'day' | 'week' | 'month' | 'year' | 'all'
 export type MediaFilter = 'both' | 'photos' | 'videos'
 export type OrientationFilter = 'both' | 'portrait' | 'landscape'
+export type FreshnessWindowDays = 0 | 1 | 3 | 7
 export type DisplayMode = 'viewer' | 'grid'
 export type ViewerItemKind = 'image' | 'video' | 'embed'
 export type ViewerItemOrientation =
@@ -175,7 +176,8 @@ export const defaultViewerSettings = {
   orientationFilter: 'both' as OrientationFilter,
   sortMode: 'hot' as SortMode,
   maxDuration: 180,
-  hideSeen: false,
+  freshnessWindowDays: 3 as FreshnessWindowDays,
+  hideSeen: true,
   autoAdvance: true,
   muted: false,
   volume: 0.5,
@@ -219,6 +221,16 @@ export function normalizeViewerSettings(
       ? parsed.sortMode
       : defaultViewerSettings.sortMode
 
+  const freshnessWindowDays: FreshnessWindowDays =
+    parsed.freshnessWindowDays === 0 ||
+    parsed.freshnessWindowDays === 1 ||
+    parsed.freshnessWindowDays === 3 ||
+    parsed.freshnessWindowDays === 7
+      ? parsed.freshnessWindowDays
+      : parsed.hideSeen === true
+        ? 7
+        : defaultViewerSettings.freshnessWindowDays
+
   const maxDuration =
     typeof parsed.maxDuration === 'number' && Number.isFinite(parsed.maxDuration)
       ? Math.min(Math.max(parsed.maxDuration, 10), 300)
@@ -241,10 +253,8 @@ export function normalizeViewerSettings(
     orientationFilter,
     sortMode,
     maxDuration,
-    hideSeen:
-      typeof parsed.hideSeen === 'boolean'
-        ? parsed.hideSeen
-        : defaultViewerSettings.hideSeen,
+    freshnessWindowDays,
+    hideSeen: freshnessWindowDays > 0,
     autoAdvance:
       typeof parsed.autoAdvance === 'boolean'
         ? parsed.autoAdvance

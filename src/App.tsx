@@ -29,6 +29,7 @@ import {
   fetchPostComments,
   fetchSubredditPage,
   fetchUserPage,
+  type FreshnessWindowDays,
   normalizeViewerSettings,
   warmMediaAsset,
   type ListingPage,
@@ -64,6 +65,7 @@ type Route =
     }
 
 type ViewerSettings = typeof defaultViewerSettings
+type SeenHistory = Record<string, number>
 
 type ViewerSession = {
   subreddit: string
@@ -107,6 +109,11 @@ type OpenAuthorOptions = {
 
 const MAX_PREVIEW_REQUESTS = 1
 const PREVIEW_ROOT_MARGIN = '240px 0px'
+const DAY_MS = 24 * 60 * 60 * 1000
+const LEGACY_SEEN_ITEM_AGE_DAYS = 8
+const SEEN_HISTORY_MAX_ITEMS = 2500
+const SEEN_HISTORY_RETENTION_DAYS = 45
+const MIN_FRESH_ITEMS = 10
 const previewRequestQueue: Array<() => Promise<void>> = []
 const subredditPreviewCache = new LruCache<string, Promise<ListingPage>>(120)
 const supplementalNsfwSubreddits = new Set(['petite'])
@@ -157,9 +164,10 @@ function App() {
     storageKeys.favorites,
     {},
   )
-  const [seenItems, setSeenItems] = usePersistentState<string[]>(
+  const [seenHistory, setSeenHistory] = usePersistentState<SeenHistory>(
     storageKeys.seenItems,
-    [],
+    {},
+    normalizeSeenHistory,
   )
   const [viewerSettings, setViewerSettings] = usePersistentState<ViewerSettings>(
     storageKeys.viewerSettings,
@@ -287,7 +295,8 @@ function App() {
           options?.orientationFilter ?? defaultViewerSettings.orientationFilter,
         sortMode: options?.sortMode ?? defaultViewerSettings.sortMode,
         autoAdvance: options?.autoAdvance ?? defaultViewerSettings.autoAdvance,
-        hideSeen: isPresetOpen ? base.hideSeen : defaultViewerSettings.hideSeen,
+        freshnessWindowDays: base.freshnessWindowDays,
+        hideSeen: base.freshnessWindowDays > 0,
         maxDuration: isPresetOpen ? base.maxDuration : defaultViewerSettings.maxDuration,
       }
     })
@@ -436,9 +445,15 @@ function App() {
   }
 
   const markSeen = (itemKey: string) => {
-    setSeenItems((current) => {
-      if (current.includes(itemKey)) return current
-      return [itemKey, ...current].slice(0, 1500)
+    setSeenHistory((current) => {
+      const now = Date.now()
+      return pruneSeenHistory(
+        {
+          ...current,
+          [itemKey]: now,
+        },
+        now,
+      )
     })
   }
 
@@ -577,7 +592,7 @@ function App() {
               homepageCuration={homepageCuration}
               nsfwEnabled={nsfwEnabled}
               savedSubreddits={savedSubreddits}
-              seenCount={seenItems.length}
+              seenCount={Object.keys(seenHistory).length}
               sessions={sessions}
               onOpenBrowseTarget={openBrowseTarget}
               onOpenCinema={openCinema}
@@ -605,7 +620,7 @@ function App() {
               favorites={favorites}
               hasPrivacyLock={Boolean(privacyLock)}
               nsfwEnabled={nsfwEnabled}
-              seenItems={seenItems}
+              seenHistory={seenHistory}
               settings={viewerSettings}
               onBack={navigateHome}
               onOpenFavorites={openFavorites}
@@ -1591,7 +1606,7 @@ function ViewerPage({
   favorites,
   hasPrivacyLock,
   nsfwEnabled,
-  seenItems,
+  seenHistory,
   settings,
   onBack,
   onOpenFavorites,
@@ -1618,7 +1633,7 @@ function ViewerPage({
   favorites: FavoriteEntries
   hasPrivacyLock: boolean
   nsfwEnabled: boolean
-  seenItems: string[]
+  seenHistory: SeenHistory
   settings: ViewerSettings
   onBack: () => void
   onOpenFavorites: () => void
@@ -1658,6 +1673,7 @@ function ViewerPage({
   const [selectedTag, setSelectedTag] = useState('all')
   const [soundBlockedItemKey, setSoundBlockedItemKey] = useState('')
   const [soundUnavailableItemKey, setSoundUnavailableItemKey] = useState('')
+  const [exemptSeenItemKey, setExemptSeenItemKey] = useState('')
   const [commentsOpen, setCommentsOpen] = useState(false)
   const [comments, setComments] = useState<RedditComment[]>([])
   const [commentsStatus, setCommentsStatus] = useState<
@@ -1676,7 +1692,6 @@ function ViewerPage({
   const lastRecordedItemRef = useRef('')
   const commentRequestIdRef = useRef(0)
 
-  const seenSet = useMemo(() => new Set(seenItems), [seenItems])
   const favoriteEntries = useMemo(
     () =>
       Object.values(favorites).sort(
@@ -1760,6 +1775,8 @@ function ViewerPage({
           ['year', 'Year'],
           ['all', 'All'],
         ]
+  const activeFreshnessWindowDays = settings.freshnessWindowDays
+  const isFreshnessActive = activeFreshnessWindowDays > 0
   const sourceItems = useMemo(
     () =>
       isFavoritesRoute ? favoriteEntries.map((entry) => entry.item) : items,
@@ -1769,9 +1786,10 @@ function ViewerPage({
     () =>
       sourceItems.filter((item) =>
         matchesViewerFilters({
+          allowFreshnessItemKey: isGridMode ? '' : exemptSeenItemKey,
           item,
           nsfwEnabled,
-          seenSet,
+          seenHistory,
           settings,
         }) &&
         matchesFavoriteTag({
@@ -1781,17 +1799,29 @@ function ViewerPage({
           selectedTag: effectiveSelectedTag,
         }),
       ),
-    [effectiveSelectedTag, favorites, nsfwEnabled, route, seenSet, settings, sourceItems],
+    [
+      effectiveSelectedTag,
+      exemptSeenItemKey,
+      favorites,
+      isGridMode,
+      nsfwEnabled,
+      route,
+      seenHistory,
+      settings,
+      sourceItems,
+    ],
   )
-  const filteredItemsIgnoringSeen = useMemo(
+  const filteredItemsIgnoringFreshness = useMemo(
     () =>
       sourceItems.filter((item) =>
         matchesViewerFilters({
+          allowFreshnessItemKey: isGridMode ? '' : exemptSeenItemKey,
           item,
           nsfwEnabled,
-          seenSet,
+          seenHistory,
           settings: {
             ...settings,
+            freshnessWindowDays: 0,
             hideSeen: false,
           },
         }) &&
@@ -1802,19 +1832,31 @@ function ViewerPage({
           selectedTag: effectiveSelectedTag,
         }),
       ),
-    [effectiveSelectedTag, favorites, nsfwEnabled, route, seenSet, settings, sourceItems],
+    [
+      effectiveSelectedTag,
+      exemptSeenItemKey,
+      favorites,
+      isGridMode,
+      nsfwEnabled,
+      route,
+      seenHistory,
+      settings,
+      sourceItems,
+    ],
   )
   const relaxedFilteredItems = useMemo(
     () =>
       sourceItems.filter((item) =>
         matchesViewerFilters({
+          allowFreshnessItemKey: isGridMode ? '' : exemptSeenItemKey,
           item,
           nsfwEnabled,
-          seenSet,
+          seenHistory,
           settings: {
             ...settings,
             mediaFilter: defaultViewerSettings.mediaFilter,
             orientationFilter: defaultViewerSettings.orientationFilter,
+            freshnessWindowDays: defaultViewerSettings.freshnessWindowDays,
             hideSeen: defaultViewerSettings.hideSeen,
             maxDuration: defaultViewerSettings.maxDuration,
           },
@@ -1826,7 +1868,17 @@ function ViewerPage({
           selectedTag: effectiveSelectedTag,
         }),
       ),
-    [effectiveSelectedTag, favorites, nsfwEnabled, route, seenSet, settings, sourceItems],
+    [
+      effectiveSelectedTag,
+      exemptSeenItemKey,
+      favorites,
+      isGridMode,
+      nsfwEnabled,
+      route,
+      seenHistory,
+      settings,
+      sourceItems,
+    ],
   )
   const isUniformMediaType =
     filteredItems.length > 0 &&
@@ -1954,6 +2006,7 @@ function ViewerPage({
         setProgress(0)
         setIsPaused(false)
         setSoundBlockedItemKey('')
+        setExemptSeenItemKey('')
         setCommentsOpen(false)
         commentRequestIdRef.current += 1
         onSettingsChange((current) =>
@@ -2041,6 +2094,7 @@ function ViewerPage({
       gridScrollTopRef.current = window.scrollY
       setIsPaused(false)
       setSoundBlockedItemKey('')
+      setExemptSeenItemKey('')
       setCommentsOpen(false)
       commentRequestIdRef.current += 1
       onSettingsChange((current) =>
@@ -2194,6 +2248,7 @@ function ViewerPage({
     fetchRoutePage(null)
       .then((page) => {
         if (ignore) return
+        setExemptSeenItemKey('')
         setActiveIndex(initialSession?.index ?? 0)
         setProgress(0)
         setItems(page.items)
@@ -2228,7 +2283,7 @@ function ViewerPage({
       sourceItems.length === 0 ||
       filteredItems.length > 0 ||
       relaxedFilteredItems.length === 0 ||
-      (settings.hideSeen && filteredItemsIgnoringSeen.length > 0)
+      (isFreshnessActive && filteredItemsIgnoringFreshness.length > 0)
     ) {
       return
     }
@@ -2238,7 +2293,7 @@ function ViewerPage({
         if (
           current.mediaFilter === defaultViewerSettings.mediaFilter &&
           current.orientationFilter === defaultViewerSettings.orientationFilter &&
-          current.hideSeen === defaultViewerSettings.hideSeen &&
+          current.freshnessWindowDays === defaultViewerSettings.freshnessWindowDays &&
           current.maxDuration === defaultViewerSettings.maxDuration
         ) {
           return current
@@ -2248,6 +2303,7 @@ function ViewerPage({
           ...current,
           mediaFilter: defaultViewerSettings.mediaFilter,
           orientationFilter: defaultViewerSettings.orientationFilter,
+          freshnessWindowDays: defaultViewerSettings.freshnessWindowDays,
           hideSeen: defaultViewerSettings.hideSeen,
           maxDuration: defaultViewerSettings.maxDuration,
         }
@@ -2258,11 +2314,11 @@ function ViewerPage({
   }, [
     error,
     filteredItems.length,
-    filteredItemsIgnoringSeen.length,
+    filteredItemsIgnoringFreshness.length,
+    isFreshnessActive,
     isLoading,
     onSettingsChange,
     relaxedFilteredItems.length,
-    settings.hideSeen,
     sourceItems.length,
   ])
 
@@ -2270,12 +2326,12 @@ function ViewerPage({
     if (isGridMode || isFavoritesRoute) return
 
     if (
-      !settings.hideSeen ||
+      !isFreshnessActive ||
       !after ||
       isLoading ||
       isLoadingMoreRef.current ||
-      filteredItems.length > 0 ||
-      filteredItemsIgnoringSeen.length === 0
+      filteredItems.length >= MIN_FRESH_ITEMS ||
+      filteredItemsIgnoringFreshness.length <= filteredItems.length
     ) {
       return
     }
@@ -2307,11 +2363,11 @@ function ViewerPage({
     after,
     fetchRoutePage,
     filteredItems.length,
-    filteredItemsIgnoringSeen.length,
+    filteredItemsIgnoringFreshness.length,
+    isFreshnessActive,
     isFavoritesRoute,
     isGridMode,
     isLoading,
-    settings.hideSeen,
   ])
 
   useEffect(() => {
@@ -2619,6 +2675,7 @@ function ViewerPage({
     if (!activeItem || lastRecordedItemRef.current === activeItem.key) return
 
     lastRecordedItemRef.current = activeItem.key
+    setExemptSeenItemKey(activeItem.key)
     onMarkSeen(activeItem.key)
     if (route.kind === 'subreddit') {
       onSessionUpdate(route.subreddit, {
@@ -2732,10 +2789,21 @@ function ViewerPage({
     key: K,
     value: ViewerSettings[K],
   ) => {
-    onSettingsChange((current) => ({
-      ...current,
-      [key]: value,
-    }))
+    onSettingsChange((current) => {
+      if (key === 'freshnessWindowDays') {
+        const freshnessWindowDays = value as FreshnessWindowDays
+        return {
+          ...current,
+          freshnessWindowDays,
+          hideSeen: freshnessWindowDays > 0,
+        }
+      }
+
+      return {
+        ...current,
+        [key]: value,
+      }
+    })
   }
 
   const resetContentFilters = () => {
@@ -2744,6 +2812,7 @@ function ViewerPage({
       displayMode: current.displayMode,
       mediaFilter: defaultViewerSettings.mediaFilter,
       orientationFilter: defaultViewerSettings.orientationFilter,
+      freshnessWindowDays: defaultViewerSettings.freshnessWindowDays,
       hideSeen: defaultViewerSettings.hideSeen,
       maxDuration: defaultViewerSettings.maxDuration,
     }))
@@ -2993,14 +3062,19 @@ function ViewerPage({
               />
             </label>
 
-            <label className="toggle-pill compact viewer-toggle">
-              <span>Seen</span>
-              <input
-                checked={settings.hideSeen}
-                type="checkbox"
-                onChange={() => updateSetting('hideSeen', !settings.hideSeen)}
-              />
-            </label>
+            <FilterGroup
+              label="Fresh"
+              options={[
+                ['0', 'All'],
+                ['1', 'Today'],
+                ['3', '3d'],
+                ['7', '7d'],
+              ]}
+              value={String(settings.freshnessWindowDays)}
+              onChange={(value) =>
+                updateSetting('freshnessWindowDays', Number(value) as FreshnessWindowDays)
+              }
+            />
 
             {isFavoritesRoute && favoriteTags.length > 0 ? (
               <FilterGroup
@@ -4221,6 +4295,56 @@ function toggleFollowedValue(current: string[], nextValue: string) {
   return [nextValue, ...current].slice(0, 60)
 }
 
+function normalizeSeenHistory(value: unknown): SeenHistory {
+  const now = Date.now()
+  const legacySeenAt = now - LEGACY_SEEN_ITEM_AGE_DAYS * DAY_MS
+
+  if (Array.isArray(value)) {
+    return pruneSeenHistory(
+      Object.fromEntries(
+        value
+          .filter((entry): entry is string => typeof entry === 'string' && entry.length > 0)
+          .map((entry) => [entry, legacySeenAt]),
+      ),
+      now,
+    )
+  }
+
+  if (!value || typeof value !== 'object') {
+    return {}
+  }
+
+  const normalizedEntries = Object.entries(value).filter(
+    ([key, seenAt]) =>
+      typeof key === 'string' &&
+      key.length > 0 &&
+      typeof seenAt === 'number' &&
+      Number.isFinite(seenAt) &&
+      seenAt > 0,
+  )
+
+  return pruneSeenHistory(Object.fromEntries(normalizedEntries), now)
+}
+
+function pruneSeenHistory(history: SeenHistory, now = Date.now()) {
+  const cutoff = now - SEEN_HISTORY_RETENTION_DAYS * DAY_MS
+  const nextEntries = Object.entries(history)
+    .filter(
+      ([key, seenAt]) =>
+        key.length > 0 &&
+        Number.isFinite(seenAt) &&
+        seenAt >= cutoff,
+    )
+    .sort((left, right) => right[1] - left[1])
+    .slice(0, SEEN_HISTORY_MAX_ITEMS)
+
+  return Object.fromEntries(nextEntries)
+}
+
+function getFreshnessWindowMs(days: FreshnessWindowDays) {
+  return days * DAY_MS
+}
+
 function matchesLandingMode({
   subreddit,
   nsfwEnabled,
@@ -4247,14 +4371,16 @@ function matchesLandingMode({
 }
 
 function matchesViewerFilters({
+  allowFreshnessItemKey,
   item,
   nsfwEnabled,
-  seenSet,
+  seenHistory,
   settings,
 }: {
+  allowFreshnessItemKey?: string
   item: ViewerItem
   nsfwEnabled: boolean
-  seenSet: Set<string>
+  seenHistory: SeenHistory
   settings: ViewerSettings
 }) {
   if (!nsfwEnabled && item.over18) return false
@@ -4279,8 +4405,16 @@ function matchesViewerFilters({
     return false
   }
 
-  if (settings.hideSeen && seenSet.has(item.key)) {
-    return false
+  const freshnessWindowMs = getFreshnessWindowMs(settings.freshnessWindowDays)
+  if (freshnessWindowMs > 0) {
+    const seenAt = seenHistory[item.key]
+    if (
+      item.key !== allowFreshnessItemKey &&
+      typeof seenAt === 'number' &&
+      Date.now() - seenAt < freshnessWindowMs
+    ) {
+      return false
+    }
   }
 
   return true

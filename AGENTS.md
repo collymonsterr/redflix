@@ -17,6 +17,7 @@ RedFlix is a private Reddit media viewer focused on:
 - `/` must stay the default SFW homepage.
 - `/nsfw` is the explicit NSFW homepage.
 - Do not mix SFW and NSFW homepage suggestions by default.
+- Prefer quality-first feeds with freshness controls over naive randomization.
 - Keep the UI visually clean and compact. Avoid adding heavy explanatory copy in the interface.
 - Fullscreen should prioritize media, not chrome.
 - LocalStorage is the main persistence layer unless the user explicitly asks for something more complex.
@@ -50,7 +51,7 @@ Key browser-local state includes:
 - followed subreddits
 - saved subreddits
 - sessions / continue watching
-- seen items
+- seen history with timestamps
 - viewer settings
 - homepage curation
 - NSFW state
