@@ -157,6 +157,16 @@
   padding-inline: 0;
 }
 
+.landing-mode-link {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.76rem;
+}
+
+.landing-mode-link.is-active {
+  color: var(--paper);
+}
+
 .quick-links button:hover,
 .text-link-list button:hover,
 .text-directory-card-header button:hover,
@@ -185,6 +195,27 @@
 .row-header-copy {
   display: grid;
   gap: 4px;
+}
+
+.row-toggle-button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.5rem 0.72rem;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    transform 140ms ease,
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.row-toggle-button:hover {
+  transform: translateY(-1px);
+  color: var(--paper);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .row-hint {
@@ -1585,6 +1616,49 @@ iframe.stage-media {
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+/* ── Focus styles ─────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+summary:focus-visible,
+a:focus-visible {
+  border-radius: 6px;
+}
+
+input:focus-visible,
+textarea:focus-visible {
+  outline-color: rgba(255, 255, 255, 0.5);
+}
+
+/* ── Reduced motion ───────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Keyboard shortcut hint ───────────────────────────────────── */
+.viewer-kbd-hint {
+  font-size: 0.72rem;
+  color: var(--muted);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  display: none;
+}
+
+@media (hover: hover) and (min-width: 761px) {
+  .viewer-kbd-hint {
+    display: block;
+  }
+}
+
 @media (max-width: 900px) {
   .viewer-toggle {
     margin-left: 0;
@@ -1628,6 +1702,8 @@ iframe.stage-media {
     top: 10px;
     left: 10px;
     right: 10px;
+    /* Always show the dock on touch devices — no hover to reveal it */
+    opacity: 1;
   }
 
   .viewer-identity,

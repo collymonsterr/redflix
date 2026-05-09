@@ -1,4 +1,5 @@
 import {
+  Children,
   useCallback,
   useEffect,
   useMemo,
@@ -223,6 +224,10 @@ function App() {
   const favoriteCount = Object.keys(favorites).length
   const followedCreatorCount = followedCreators.length
   const followedSubredditCount = followedSubreddits.length
+
+  const clearSeenHistory = useCallback(() => {
+    setSeenHistory({})
+  }, [setSeenHistory])
 
   const navigateTo = (path: string) => {
     window.history.pushState({}, '', path)
@@ -604,7 +609,8 @@ function App() {
               onOpenCurationEditor={() => setIsCurationEditorOpen(true)}
               onOpenPrivacyDialog={openPrivacyDialog}
               onOpenSubreddit={openSubreddit}
-              onToggleNsfw={toggleNsfw}
+              onClearSeenHistory={clearSeenHistory}
+            onToggleNsfw={toggleNsfw}
             />
           ) : (
             <ViewerPage
@@ -677,6 +683,7 @@ function LandingPage({
   savedSubreddits,
   seenCount,
   sessions,
+  onClearSeenHistory,
   onOpenBrowseTarget,
   onOpenCinema,
   onOpenFavorites,
@@ -699,6 +706,7 @@ function LandingPage({
   savedSubreddits: string[]
   seenCount: number
   sessions: ViewerSessions
+  onClearSeenHistory: () => void
   onOpenBrowseTarget: (value: string) => void
   onOpenCinema: () => void
   onOpenFavorites: () => void
@@ -721,6 +729,11 @@ function LandingPage({
   const activePortraitShowcase = nsfwEnabled
     ? homepageCuration.nsfwPortraitShowcase
     : homepageCuration.sfwPortraitShowcase
+  const primaryDiscoverySection = discoverySections[0] ?? null
+  const compactDiscoverySections = discoverySections.slice(1)
+  const compactDirectorySections = nsfwEnabled
+    ? [...compactDiscoverySections, ...homepageCuration.nsfwMoreSections]
+    : compactDiscoverySections
   const placeholder = nsfwEnabled
     ? 'Open /r/gonewild, /r/NSFW_GIF, /r/RealGirls...'
     : 'Open /r/pics, /r/gifs, /u/example...'
@@ -737,7 +750,7 @@ function LandingPage({
         sessions,
       })
     })
-    .slice(0, 10)
+    .slice(0, 6)
   const modeSavedSubreddits = savedSubreddits.filter((subreddit) =>
     matchesLandingMode({
       subreddit,
@@ -794,10 +807,6 @@ function LandingPage({
           <button className="viewer-link muted" type="button" onClick={onOpenCurationEditor}>
             Edit home
           </button>
-          <label className="toggle-pill">
-            <span>NSFW</span>
-            <input checked={nsfwEnabled} type="checkbox" onChange={onToggleNsfw} />
-          </label>
         </div>
       </header>
 
@@ -900,11 +909,14 @@ function LandingPage({
         </SectionRow>
       ) : null}
 
-      {discoverySections.map((section) => (
-        <SectionRow key={`${nsfwEnabled ? 'nsfw' : 'sfw'}-${section.title}`} title={section.title}>
-          {section.subreddits.map((subreddit) => (
+      {primaryDiscoverySection ? (
+        <SectionRow
+          hint="A short first pass of high-signal subs, kept to two clean rows before expanding."
+          title={primaryDiscoverySection.title}
+        >
+          {primaryDiscoverySection.subreddits.map((subreddit) => (
             <SubredditTile
-              key={`${nsfwEnabled ? 'nsfw' : 'sfw'}-${section.title}-${subreddit}`}
+              key={`${nsfwEnabled ? 'nsfw' : 'sfw'}-${primaryDiscoverySection.title}-${subreddit}`}
               forcedPoster={sessions[toSessionKey(subreddit)]?.posterUrl ?? null}
               nsfwEnabled={nsfwEnabled}
               subreddit={subreddit}
@@ -912,18 +924,40 @@ function LandingPage({
             />
           ))}
         </SectionRow>
-      ))}
+      ) : null}
 
-      {nsfwEnabled ? (
+      {compactDirectorySections.length > 0 ? (
         <TextSubredditDirectory
-          sections={homepageCuration.nsfwMoreSections}
+          hint="Everything else stays compact here so the homepage feels faster to scan."
+          sections={compactDirectorySections}
+          title="More to Explore"
           onOpenSubreddit={onOpenSubreddit}
         />
       ) : null}
 
       <footer className="landing-footer">
         <p>
-          {savedSubreddits.length} saved · {favoriteCount} favorites · {followedCreatorCount} creators · {followedSubredditCount} subreddits · {seenCount} seen · local only
+          {savedSubreddits.length} saved · {favoriteCount} favorites · {followedCreatorCount} creators · {followedSubredditCount} subreddits ·{' '}
+          {seenCount > 0 ? (
+            <button
+              className="ghost-link"
+              style={{ fontSize: 'inherit', verticalAlign: 'baseline' }}
+              type="button"
+              onClick={onClearSeenHistory}
+            >
+              {seenCount} seen ✕
+            </button>
+          ) : (
+            '0 seen'
+          )}{' '}
+          · local only ·{' '}
+          <button
+            className={`ghost-link landing-mode-link${nsfwEnabled ? ' is-active' : ''}`}
+            type="button"
+            onClick={onToggleNsfw}
+          >
+            NSFW
+          </button>
         </p>
       </footer>
     </main>
@@ -2906,6 +2940,14 @@ function ViewerPage({
                   {hasPrivacyLock ? 'Privacy' : 'Set lock'}
                 </button>
 
+                <button
+                  className={`viewer-link ${nsfwEnabled ? 'is-active' : 'muted'}`}
+                  type="button"
+                  onClick={onToggleNsfw}
+                >
+                  NSFW
+                </button>
+
                 {nsfwEnabled ? (
                   <button
                     className={`viewer-link ${isCinemaRoute ? 'is-active' : 'feature-link'}`}
@@ -2937,13 +2979,14 @@ function ViewerPage({
                 ) : null}
               </div>
             </details>
-
-            <label className="toggle-pill compact viewer-toggle">
-              <span>NSFW</span>
-              <input checked={nsfwEnabled} type="checkbox" onChange={onToggleNsfw} />
-            </label>
           </div>
         </div>
+
+        {!isGridMode ? (
+          <p className="viewer-kbd-hint" aria-hidden="true">
+            ← → navigate · Space pause · M mute · F fullscreen · Esc exit
+          </p>
+        ) : null}
 
         {filtersOpen ? (
           <div className="viewer-dock-filters">
@@ -3956,6 +3999,39 @@ function SectionRow({
   title: string
   variant?: 'default' | 'showcase-landscape' | 'showcase-portrait'
 }) {
+  const items = useMemo(() => Children.toArray(children), [children])
+  const [isExpanded, setIsExpanded] = useState(false)
+  const rowRef = useRef<HTMLDivElement | null>(null)
+  const [collapsedCount, setCollapsedCount] = useState(() =>
+    getSectionPreviewCount(variant, items.length),
+  )
+
+  useEffect(() => {
+    const node = rowRef.current
+
+    const updateCollapsedCount = () => {
+      setCollapsedCount(
+        getSectionPreviewCount(variant, items.length, node?.clientWidth ?? null),
+      )
+    }
+
+    updateCollapsedCount()
+
+    if (!node || typeof ResizeObserver === 'undefined') {
+      return
+    }
+
+    const observer = new ResizeObserver(() => {
+      updateCollapsedCount()
+    })
+
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [items.length, variant])
+
+  const visibleItems = isExpanded ? items : items.slice(0, collapsedCount)
+  const hiddenCount = Math.max(0, items.length - collapsedCount)
+
   return (
     <section className="row-section">
       <header className="row-header">
@@ -3963,18 +4039,33 @@ function SectionRow({
           <p className="eyebrow">{title}</p>
           {hint ? <p className="row-hint">{hint}</p> : null}
         </div>
+        {hiddenCount > 0 ? (
+          <button
+            className="row-toggle-button"
+            type="button"
+            onClick={() => setIsExpanded((current) => !current)}
+          >
+            {isExpanded ? 'Show less' : `Show ${hiddenCount} more`}
+          </button>
+        ) : null}
       </header>
-      <div className={`tile-row ${variant ? `tile-row--${variant}` : ''}`}>{children}</div>
+      <div ref={rowRef} className={`tile-row ${variant ? `tile-row--${variant}` : ''}`}>
+        {visibleItems}
+      </div>
     </section>
   )
 }
 
 function TextSubredditDirectory({
+  hint,
   onOpenSubreddit,
   sections,
+  title = 'More Subreddits',
 }: {
+  hint?: string
   onOpenSubreddit: (value: string) => void
   sections: Array<{ title: string; subreddits: string[] }>
+  title?: string
 }) {
   const [expandedSections, setExpandedSections] = useState<string[]>([])
 
@@ -3982,9 +4073,10 @@ function TextSubredditDirectory({
     <section className="text-directory">
       <header className="row-header">
         <div className="row-header-copy">
-          <p className="eyebrow">More Subreddits</p>
+          <p className="eyebrow">{title}</p>
           <p className="row-hint">
-            Text-only list for the basics, kept light so the homepage does not become a wall of cards.
+            {hint ??
+              'Text-only list for the basics, kept light so the homepage does not become a wall of cards.'}
           </p>
         </div>
       </header>
@@ -4036,6 +4128,25 @@ function TextSubredditDirectory({
       </div>
     </section>
   )
+}
+
+function getSectionPreviewCount(
+  variant: 'default' | 'showcase-landscape' | 'showcase-portrait',
+  itemCount: number,
+  containerWidth?: number | null,
+) {
+  if (itemCount <= 0) return 0
+
+  const fallbackWidth =
+    typeof window !== 'undefined' ? Math.max(window.innerWidth - 88, 320) : 1280
+  const width = Math.max(320, containerWidth ?? fallbackWidth)
+  const gap = variant === 'default' ? 12 : 14
+  const minimumCardWidth =
+    variant === 'showcase-landscape' ? 280 : 178
+  const columns = Math.max(1, Math.floor((width + gap) / (minimumCardWidth + gap)))
+  const collapsedCount = columns * 2
+
+  return Math.min(itemCount, collapsedCount)
 }
 
 function FilterGroup({

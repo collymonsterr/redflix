@@ -80,6 +80,8 @@ That means:
 ## Practical Tips
 
 - Keep section names short so the homepage stays clean.
-- Use showcase rows for subs that are reliably video-heavy.
-- Use regular section rows for broader browsing buckets.
+- Use showcase rows for subs that are reliably video-heavy, and keep landscape and portrait choices intentional.
+- The homepage now caps visual rows to two clean lines before `Show more`, so avoid bloating any one section with too many must-see items.
+- Use regular section rows for the highest-priority browsing buckets.
+- Lower-priority or long-tail groups work better in the compact text directory than as full card rows.
 - If a subreddit preview looks stale after major curation changes, a refresh is usually enough.

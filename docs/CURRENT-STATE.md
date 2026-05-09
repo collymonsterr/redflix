@@ -5,7 +5,7 @@ This document is the quickest snapshot of what RedFlix does today.
 ## Main Routes
 
 - `/` - SFW homepage. This is the default landing page.
-- `/nsfw` - NSFW homepage. NSFW does not load by default unless the user opens this route or toggles into it.
+- `/nsfw` - NSFW homepage. NSFW does not load by default unless the user opens this route or switches into it deliberately.
 - `/r/:subreddit` - subreddit viewer and grid.
 - `/u/:username` - creator gallery sourced from that user's posts.
 - `/favorites` - saved favorites.
@@ -16,7 +16,10 @@ This document is the quickest snapshot of what RedFlix does today.
 ## Homepage Behavior
 
 - SFW and NSFW home are intentionally separated.
-- The homepage includes curated rows of subreddit cards plus showcase rows for video-heavy browsing.
+- The SFW homepage keeps NSFW access low-profile: the adult switch lives in the footer instead of the top bar.
+- The homepage leads with a small number of card-heavy sections, then pushes the long tail into a compact text-only browse area.
+- Visual homepage sections are capped to two clean rows before a `Show more` expansion so the page does not end with awkward leftover cards on a third line.
+- Wide-video and tall-video showcase rows are treated separately so portrait and landscape discovery do not fight each other.
 - The `Edit home` button opens a local curation editor so homepage rows can be changed without code edits.
 - Homepage curation is stored in the browser and is specific to that device and browser profile.
 
@@ -35,6 +38,7 @@ This document is the quickest snapshot of what RedFlix does today.
 - The viewer defaults to a `3d` freshness cooldown so returning visits stay fresher without abandoning quality-first sorting.
 - When the current page is too stale, the viewer can pull deeper Reddit pages automatically to top up fresh results.
 - Reddit-style ranking controls such as `Hot`, `Top day`, `Top week`, `Top month`, and `Top all` live in the expanded filters row.
+- The viewer no longer shows an NSFW toggle in the top dock; it lives inside the `More` menu.
 - Attempted autoplay with sound when moving to the next direct video.
 - Hover controls in fullscreen for play/pause, mute, and the top viewer dock.
 - `Comments` button for lightweight comment preview before leaving the app.
