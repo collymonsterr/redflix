@@ -1739,6 +1739,7 @@ function ViewerPage({
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const chromeTimerRef = useRef<number | null>(null)
   const isLoadingMoreRef = useRef(false)
+  const navigationLockUntilRef = useRef(0)
   const gridScrollTopRef = useRef(0)
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null)
   const lastRecordedItemRef = useRef('')
@@ -2044,6 +2045,13 @@ function ViewerPage({
   const moveBy = useCallback(
     (direction: 1 | -1, options?: { userInitiated?: boolean }) => {
       if (filteredItems.length === 0) return
+
+      const now = Date.now()
+      if (now < navigationLockUntilRef.current) {
+        return
+      }
+
+      navigationLockUntilRef.current = now + (options?.userInitiated ? 360 : 220)
       const normalizedIndex = Math.min(safeIndex, filteredItems.length - 1)
       const nextIndex =
         normalizedIndex + direction < 0
