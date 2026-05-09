@@ -119,6 +119,8 @@ const previewRequestQueue: Array<() => Promise<void>> = []
 const subredditPreviewCache = new LruCache<string, Promise<ListingPage>>(120)
 const supplementalNsfwSubreddits = new Set(['petite'])
 let knownNsfwSubreddits = buildKnownNsfwSet(defaultHomepageCurationConfig)
+let knownLandscapeVideoSubreddits = buildKnownLandscapeVideoSet(defaultHomepageCurationConfig)
+let knownPortraitVideoSubreddits = buildKnownPortraitVideoSet(defaultHomepageCurationConfig)
 let activePreviewRequests = 0
 
 function App() {
@@ -284,6 +286,7 @@ function App() {
     if (!subreddit) return
 
     const nextDisplayMode = options?.displayMode ?? 'grid'
+    const inferredPreset = inferSubredditViewerPreset(subreddit)
     setViewerSettings((current) => {
       const base = resetCinemaPresetIfNeeded(current)
       const isPresetOpen =
@@ -295,9 +298,14 @@ function App() {
       return {
         ...base,
         displayMode: nextDisplayMode,
-        mediaFilter: options?.mediaFilter ?? defaultViewerSettings.mediaFilter,
+        mediaFilter:
+          options?.mediaFilter ??
+          inferredPreset?.mediaFilter ??
+          defaultViewerSettings.mediaFilter,
         orientationFilter:
-          options?.orientationFilter ?? defaultViewerSettings.orientationFilter,
+          options?.orientationFilter ??
+          inferredPreset?.orientationFilter ??
+          defaultViewerSettings.orientationFilter,
         sortMode: options?.sortMode ?? defaultViewerSettings.sortMode,
         autoAdvance: options?.autoAdvance ?? defaultViewerSettings.autoAdvance,
         freshnessWindowDays: base.freshnessWindowDays,
@@ -1704,9 +1712,11 @@ function ViewerPage({
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isPaused, setIsPaused] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [showInfoPanel, setShowInfoPanel] = useState(true)
   const [selectedTag, setSelectedTag] = useState('all')
   const [soundBlockedItemKey, setSoundBlockedItemKey] = useState('')
   const [soundUnavailableItemKey, setSoundUnavailableItemKey] = useState('')
+  const [mediaErrorItemKey, setMediaErrorItemKey] = useState('')
   const [exemptSeenItemKey, setExemptSeenItemKey] = useState('')
   const [commentsOpen, setCommentsOpen] = useState(false)
   const [comments, setComments] = useState<RedditComment[]>([])
@@ -1931,7 +1941,7 @@ function ViewerPage({
     activeItem && soundUnavailableItemKey === activeItem.key,
   )
   const isSoundEffectivelyMuted = settings.muted || isSoundBlocked || isSoundUnavailable
-  const hasSidePanel = !isGridMode && Boolean(activeItem)
+  const hasSidePanel = !isGridMode && Boolean(activeItem) && showInfoPanel
   const activeFavorite = activeItem ? favorites[activeItem.key] : undefined
   const activeTags = activeFavorite?.tags ?? []
   const activeCreatorFollowed = activeItem
@@ -2040,6 +2050,7 @@ function ViewerPage({
         setProgress(0)
         setIsPaused(false)
         setSoundBlockedItemKey('')
+        setMediaErrorItemKey('')
         setExemptSeenItemKey('')
         setCommentsOpen(false)
         commentRequestIdRef.current += 1
@@ -2128,6 +2139,7 @@ function ViewerPage({
       gridScrollTopRef.current = window.scrollY
       setIsPaused(false)
       setSoundBlockedItemKey('')
+      setMediaErrorItemKey('')
       setExemptSeenItemKey('')
       setCommentsOpen(false)
       commentRequestIdRef.current += 1
@@ -2190,6 +2202,47 @@ function ViewerPage({
 
     setIsPaused((current) => !current)
   }, [activeItem, isSoundEffectivelyMuted, revealChrome, settings.volume, tryStartSeparateAudio])
+
+  const toggleInfoPanel = useCallback(() => {
+    revealChrome()
+    setShowInfoPanel((current) => !current)
+  }, [revealChrome])
+
+  const handleMediaError = useCallback(() => {
+    if (!activeItem) return
+    setMediaErrorItemKey(activeItem.key)
+    setIsPaused(true)
+    revealChrome()
+  }, [activeItem, revealChrome])
+
+  const handleRetryMedia = useCallback(() => {
+    if (!activeItem || activeItem.kind !== 'video') return
+
+    const node = videoRef.current
+    const audioNode = audioRef.current
+
+    setMediaErrorItemKey('')
+    setSoundBlockedItemKey('')
+    setIsPaused(false)
+    revealChrome()
+
+    if (!node) return
+
+    node.load()
+    node.currentTime = 0
+
+    if (audioNode) {
+      audioNode.currentTime = 0
+      audioNode.pause()
+    }
+
+    const playPromise = node.play()
+    if (playPromise) {
+      void playPromise.catch(() => {
+        setIsPaused(true)
+      })
+    }
+  }, [activeItem, revealChrome])
 
   const fetchRoutePage = useCallback(
     (pageAfter?: string | null): Promise<ListingPage> => {
@@ -2626,6 +2679,18 @@ function ViewerPage({
         return
       }
 
+      if (activeItem?.orientation === 'portrait' && event.key === 'ArrowDown') {
+        event.preventDefault()
+        moveBy(1, { userInitiated: true })
+        return
+      }
+
+      if (activeItem?.orientation === 'portrait' && event.key === 'ArrowUp') {
+        event.preventDefault()
+        moveBy(-1, { userInitiated: true })
+        return
+      }
+
       if (event.key === ' ') {
         event.preventDefault()
         togglePause()
@@ -2650,7 +2715,7 @@ function ViewerPage({
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [handleToggleFullscreen, isGridMode, moveBy, onSettingsChange, togglePause])
+  }, [activeItem?.orientation, handleToggleFullscreen, isGridMode, moveBy, onSettingsChange, togglePause])
 
   useEffect(() => {
     const onFullscreenChange = () => {
@@ -2694,6 +2759,15 @@ function ViewerPage({
     const deltaX = event.clientX - pointerStartRef.current.x
     const deltaY = event.clientY - pointerStartRef.current.y
     pointerStartRef.current = null
+
+    if (
+      activeItem?.orientation === 'portrait' &&
+      Math.abs(deltaY) > 60 &&
+      Math.abs(deltaY) > Math.abs(deltaX)
+    ) {
+      moveBy(deltaY < 0 ? 1 : -1, { userInitiated: true })
+      return
+    }
 
     if (Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY)) {
       moveBy(deltaX < 0 ? 1 : -1, { userInitiated: true })
@@ -2852,6 +2926,12 @@ function ViewerPage({
     }))
   }
 
+  const setQuickView = (nextValue: 'both' | 'landscape' | 'portrait') => {
+    revealChrome()
+    updateSetting('mediaFilter', nextValue === 'both' ? 'both' : 'videos')
+    updateSetting('orientationFilter', nextValue)
+  }
+
   return (
     <main
       ref={viewerShellRef}
@@ -2890,8 +2970,32 @@ function ViewerPage({
                 className={settings.displayMode === 'grid' ? 'is-active' : ''}
                 type="button"
                 onClick={() => updateDisplayMode('grid')}
+                >
+                  Grid
+                </button>
+            </div>
+
+            <div className="viewer-shape-switch" role="group" aria-label="Quick view">
+              <button
+                className={settings.orientationFilter === 'both' ? 'is-active' : ''}
+                type="button"
+                onClick={() => setQuickView('both')}
               >
-                Grid
+                All
+              </button>
+              <button
+                className={settings.orientationFilter === 'landscape' ? 'is-active' : ''}
+                type="button"
+                onClick={() => setQuickView('landscape')}
+              >
+                Wide
+              </button>
+              <button
+                className={settings.orientationFilter === 'portrait' ? 'is-active' : ''}
+                type="button"
+                onClick={() => setQuickView('portrait')}
+              >
+                Tall
               </button>
             </div>
 
@@ -2900,7 +3004,15 @@ function ViewerPage({
               type="button"
               onClick={() => setFiltersOpen((current) => !current)}
             >
-              {filtersOpen ? 'Hide filters' : 'Filters'}
+              {filtersOpen ? 'Hide controls' : 'Controls'}
+            </button>
+
+            <button
+              className={`viewer-link ${showInfoPanel ? '' : 'muted'}`}
+              type="button"
+              onClick={toggleInfoPanel}
+            >
+              {showInfoPanel ? 'Hide info' : 'Info'}
             </button>
 
             <details className="viewer-more-menu">
@@ -2984,7 +3096,9 @@ function ViewerPage({
 
         {!isGridMode ? (
           <p className="viewer-kbd-hint" aria-hidden="true">
-            ← → navigate · Space pause · M mute · F fullscreen · Esc exit
+            {activeItem?.orientation === 'portrait'
+              ? '↑ ↓ navigate · Space pause · M mute · F fullscreen · Esc exit'
+              : '← → navigate · Space pause · M mute · F fullscreen · Esc exit'}
           </p>
         ) : null}
 
@@ -3258,20 +3372,28 @@ function ViewerPage({
         >
           <button
             aria-label="Previous item"
-            className={`stage-nav stage-nav--prev ${chromeVisible ? 'is-visible' : ''}`}
+            className={`stage-nav stage-nav--prev ${
+              activeItem?.orientation === 'portrait' ? 'stage-nav--vertical-prev' : ''
+            } ${chromeVisible ? 'is-visible' : ''}`}
             type="button"
             onClick={() => moveBy(-1, { userInitiated: true })}
           >
-            ‹
+            <ArrowIcon
+              direction={activeItem?.orientation === 'portrait' ? 'up' : 'left'}
+            />
           </button>
 
           <button
             aria-label="Next item"
-            className={`stage-nav stage-nav--next ${chromeVisible ? 'is-visible' : ''}`}
+            className={`stage-nav stage-nav--next ${
+              activeItem?.orientation === 'portrait' ? 'stage-nav--vertical-next' : ''
+            } ${chromeVisible ? 'is-visible' : ''}`}
             type="button"
             onClick={() => moveBy(1, { userInitiated: true })}
           >
-            ›
+            <ArrowIcon
+              direction={activeItem?.orientation === 'portrait' ? 'down' : 'right'}
+            />
           </button>
 
           <div className="progress-track" aria-hidden="true">
@@ -3324,46 +3446,71 @@ function ViewerPage({
                 </button>
               </div>
             ) : (
-              <StageMedia
-                activeItem={activeItem}
-                audioRef={audioRef}
-                isFullscreen={isFullscreen}
-                isMuted={isSoundEffectivelyMuted}
-                videoRef={videoRef}
-                onAdvance={() => moveBy(1, { userInitiated: true })}
-                onAudioAvailability={(availability) => {
-                  if (!activeItem) return
+              <>
+                <StageMedia
+                  activeItem={activeItem}
+                  audioRef={audioRef}
+                  isFullscreen={isFullscreen}
+                  isMuted={isSoundEffectivelyMuted}
+                  videoRef={videoRef}
+                  onAdvance={() => moveBy(1, { userInitiated: true })}
+                  onMediaError={handleMediaError}
+                  onAudioAvailability={(availability) => {
+                    if (!activeItem) return
 
-                  if (availability === 'available') {
-                    setSoundUnavailableItemKey((current) =>
-                      current === activeItem.key ? '' : current,
-                    )
-                    return
-                  }
+                    if (availability === 'available') {
+                      setSoundUnavailableItemKey((current) =>
+                        current === activeItem.key ? '' : current,
+                      )
+                      return
+                    }
 
-                  if (availability === 'unavailable') {
-                    setSoundUnavailableItemKey(activeItem.key)
-                  }
-                }}
-                onMediaVisible={handleMediaVisible}
-                onTimeUpdate={(event) => {
-                  const node = event.currentTarget
-                  if (!Number.isFinite(node.duration) || node.duration === 0) {
-                    setProgress(0)
-                    return
-                  }
+                    if (availability === 'unavailable') {
+                      setSoundUnavailableItemKey(activeItem.key)
+                    }
+                  }}
+                  onMediaVisible={handleMediaVisible}
+                  onTimeUpdate={(event) => {
+                    const node = event.currentTarget
+                    if (!Number.isFinite(node.duration) || node.duration === 0) {
+                      setProgress(0)
+                      return
+                    }
 
-                  const audioNode = audioRef.current
-                  if (
-                    audioNode &&
-                    Math.abs(audioNode.currentTime - node.currentTime) > 0.75
-                  ) {
-                    audioNode.currentTime = node.currentTime
-                  }
+                    const audioNode = audioRef.current
+                    if (
+                      audioNode &&
+                      Math.abs(audioNode.currentTime - node.currentTime) > 0.75
+                    ) {
+                      audioNode.currentTime = node.currentTime
+                    }
 
-                  setProgress(node.currentTime / node.duration)
-                }}
-              />
+                    setProgress(node.currentTime / node.duration)
+                  }}
+                />
+                {mediaErrorItemKey === activeItem.key ? (
+                  <div className="stage-error-card">
+                    <h3>Couldn’t play this item.</h3>
+                    <p>
+                      It failed to load, so RedFlix stopped instead of skipping
+                      through the whole feed.
+                    </p>
+                    <div className="stage-error-actions">
+                      {activeItem.kind === 'video' ? (
+                        <button type="button" onClick={handleRetryMedia}>
+                          Retry
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() => moveBy(1, { userInitiated: true })}
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+              </>
             )}
             {activeItem ? (
               <div
@@ -3426,7 +3573,16 @@ function ViewerPage({
           {activeItem ? (
             <footer className="stage-footer is-visible">
               <div className="stage-footer-copy">
-                <h3>{activeItem.title}</h3>
+                <div className="stage-footer-heading">
+                  <h3>{activeItem.title}</h3>
+                  <button
+                    className="stage-footer-dismiss"
+                    type="button"
+                    onClick={toggleInfoPanel}
+                  >
+                    Hide
+                  </button>
+                </div>
                 <p className="meta-copy">
                   {safeIndex + 1}/{filteredItems.length} ·
                   u/{activeItem.author} · /r/{activeItem.subreddit}
@@ -3673,6 +3829,25 @@ function ExitFullscreenIcon() {
   )
 }
 
+function ArrowIcon({
+  direction,
+}: {
+  direction: 'left' | 'right' | 'up' | 'down'
+}) {
+  const paths = {
+    down: 'M12 19V5m0 14-5-5m5 5 5-5',
+    left: 'M5 12h14M5 12l5-5m-5 5 5 5',
+    right: 'M19 12H5m14 0-5-5m5 5-5 5',
+    up: 'M12 5v14m0-14-5 5m5-5 5 5',
+  } as const
+
+  return (
+    <svg aria-hidden="true" className="stroke-icon" viewBox="0 0 24 24">
+      <path d={paths[direction]} />
+    </svg>
+  )
+}
+
 function HeartIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24">
@@ -3724,6 +3899,7 @@ function StageMedia({
   isMuted,
   videoRef,
   onAdvance,
+  onMediaError,
   onAudioAvailability,
   onMediaVisible,
   onTimeUpdate,
@@ -3734,6 +3910,7 @@ function StageMedia({
   isMuted: boolean
   videoRef: RefObject<HTMLVideoElement | null>
   onAdvance: () => void
+  onMediaError: () => void
   onAudioAvailability: (availability: VideoAudioAvailability) => void
   onMediaVisible: () => void
   onTimeUpdate: (event: SyntheticEvent<HTMLVideoElement>) => void
@@ -3798,7 +3975,7 @@ function StageMedia({
         poster={activeItem.posterUrl ?? undefined}
         src={activeItem.mediaUrl}
         onEnded={onAdvance}
-        onError={onAdvance}
+        onError={onMediaError}
         onLoadedData={(event) => {
           onMediaVisible()
           reportAudioAvailability(event.currentTarget)
@@ -4768,8 +4945,33 @@ function buildKnownNsfwSet(config: HomepageCurationConfig) {
   )
 }
 
+function buildKnownLandscapeVideoSet(config: HomepageCurationConfig) {
+  return buildSubredditSet([
+    ...config.sfwLandscapeShowcase.map((item) => item.subreddit),
+    ...config.nsfwLandscapeShowcase.map((item) => item.subreddit),
+    ...curatedNsfwCinemaSources,
+  ])
+}
+
+function buildKnownPortraitVideoSet(config: HomepageCurationConfig) {
+  return buildSubredditSet([
+    ...config.sfwPortraitShowcase.map((item) => item.subreddit),
+    ...config.nsfwPortraitShowcase.map((item) => item.subreddit),
+  ])
+}
+
+function buildSubredditSet(entries: string[]) {
+  return new Set(
+    entries
+      .map((entry) => normalizeSubredditInput(entry).toLowerCase())
+      .filter(Boolean),
+  )
+}
+
 function syncKnownNsfwSubreddits(config: HomepageCurationConfig) {
   knownNsfwSubreddits = buildKnownNsfwSet(config)
+  knownLandscapeVideoSubreddits = buildKnownLandscapeVideoSet(config)
+  knownPortraitVideoSubreddits = buildKnownPortraitVideoSet(config)
   subredditPreviewCache.clear()
 }
 
@@ -4778,6 +4980,35 @@ function isKnownNsfwSubreddit(value: string) {
   if (!normalized) return false
 
   return knownNsfwSubreddits.has(normalized) || supplementalNsfwSubreddits.has(normalized)
+}
+
+function inferSubredditViewerPreset(subreddit: string) {
+  const normalized = normalizeSubredditInput(subreddit).toLowerCase()
+  if (!normalized) return null
+
+  if (
+    knownPortraitVideoSubreddits.has(normalized) ||
+    /tiktok|shorts|reels|vertical|portrait/.test(normalized)
+  ) {
+    return {
+      mediaFilter: 'videos' as MediaFilter,
+      orientationFilter: 'portrait' as OrientationFilter,
+    }
+  }
+
+  if (
+    knownLandscapeVideoSubreddits.has(normalized) ||
+    /trailers|videos|movieclips|mealtimevideos|artisanvideos|deepintoyoutube/.test(
+      normalized,
+    )
+  ) {
+    return {
+      mediaFilter: 'videos' as MediaFilter,
+      orientationFilter: 'landscape' as OrientationFilter,
+    }
+  }
+
+  return null
 }
 
 function formatDuration(valueInSeconds: number) {

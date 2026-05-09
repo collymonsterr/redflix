@@ -1279,12 +1279,46 @@ iframe.stage-media {
   transform: translateY(-50%) scale(1.02);
 }
 
+.stage-nav svg {
+  width: 24px;
+  height: 24px;
+}
+
+.stage-nav svg path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .stage-nav--prev {
   left: 16px;
 }
 
 .stage-nav--next {
   right: 16px;
+}
+
+.stage-nav--vertical-prev,
+.stage-nav--vertical-next {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+}
+
+.stage-nav--vertical-prev {
+  top: calc(var(--viewer-top-offset) + 84px);
+}
+
+.stage-nav--vertical-next {
+  top: auto;
+  bottom: 22px;
+}
+
+.stage-nav--vertical-prev.is-visible:hover,
+.stage-nav--vertical-next.is-visible:hover {
+  transform: translateX(-50%) scale(1.02);
 }
 
 .stage-quick-controls {
@@ -1385,6 +1419,24 @@ iframe.stage-media {
   flex: 1 1 auto;
 }
 
+.stage-footer-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.stage-footer-dismiss {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.34rem 0.6rem;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
 .stage-footer h3 {
   margin: 0;
   color: var(--paper);
@@ -1446,6 +1498,49 @@ iframe.stage-media {
 .stage-footer .favorite-icon-button svg {
   width: 20px;
   height: 20px;
+}
+
+.stage-error-card {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  bottom: 26px;
+  z-index: 9;
+  display: grid;
+  gap: 10px;
+  max-width: min(32rem, calc(100vw - 48px));
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(12, 15, 20, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(22px);
+}
+
+.stage-error-card h3,
+.stage-error-card p {
+  margin: 0;
+}
+
+.stage-error-card p {
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.stage-error-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.stage-error-actions button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.58rem 0.82rem;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--paper);
+  font: inherit;
+  cursor: pointer;
 }
 
 .comment-preview-card {
