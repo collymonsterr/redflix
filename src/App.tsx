@@ -724,7 +724,7 @@ function LandingPage({
   onOpenLandscapeSubreddit: (value: string) => void
   onOpenPortraitSubreddit: (value: string) => void
   onOpenPrivacyDialog: () => void
-  onOpenSubreddit: (value: string) => void
+  onOpenSubreddit: (value: string, options?: OpenSubredditOptions) => void
   onToggleNsfw: () => void
 }) {
   const [searchValue, setSearchValue] = useState('')
@@ -773,6 +773,14 @@ function LandingPage({
       sessions,
     }),
   )
+  const openLandingSubreddit = (value: string) => {
+    if (nsfwEnabled) {
+      onOpenSubreddit(value, { displayMode: 'viewer' })
+      return
+    }
+
+    onOpenSubreddit(value)
+  }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -836,7 +844,7 @@ function LandingPage({
             </button>
           ) : null}
           {quickLinks.map((name) => (
-            <button key={name} type="button" onClick={() => onOpenSubreddit(name)}>
+            <button key={name} type="button" onClick={() => openLandingSubreddit(name)}>
               /r/{name}
             </button>
           ))}
@@ -897,7 +905,7 @@ function LandingPage({
               nsfwEnabled={nsfwEnabled}
               previewEnabled
               subreddit={subreddit}
-              onOpenSubreddit={onOpenSubreddit}
+              onOpenSubreddit={openLandingSubreddit}
             />
           ))}
         </SectionRow>
@@ -911,7 +919,7 @@ function LandingPage({
               forcedPoster={session.posterUrl}
               nsfwEnabled={nsfwEnabled}
               subreddit={session.subreddit}
-              onOpenSubreddit={onOpenSubreddit}
+              onOpenSubreddit={openLandingSubreddit}
             />
           ))}
         </SectionRow>
@@ -928,7 +936,7 @@ function LandingPage({
               forcedPoster={sessions[toSessionKey(subreddit)]?.posterUrl ?? null}
               nsfwEnabled={nsfwEnabled}
               subreddit={subreddit}
-              onOpenSubreddit={onOpenSubreddit}
+              onOpenSubreddit={openLandingSubreddit}
             />
           ))}
         </SectionRow>
@@ -939,7 +947,7 @@ function LandingPage({
           hint="Everything else stays compact here so the homepage feels faster to scan."
           sections={compactDirectorySections}
           title="More to Explore"
-          onOpenSubreddit={onOpenSubreddit}
+          onOpenSubreddit={openLandingSubreddit}
         />
       ) : null}
 

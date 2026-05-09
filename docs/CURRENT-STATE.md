@@ -20,6 +20,7 @@ This document is the quickest snapshot of what RedFlix does today.
 - The homepage leads with a small number of card-heavy sections, then pushes the long tail into a compact text-only browse area.
 - Visual homepage sections are capped to two clean rows before a `Show more` expansion so the page does not end with awkward leftover cards on a third line.
 - Wide-video and tall-video showcase rows are treated separately so portrait and landscape discovery do not fight each other.
+- On the NSFW homepage, the regular subreddit links now open straight into viewer mode rather than dropping into grid first.
 - The `Edit home` button opens a local curation editor so homepage rows can be changed without code edits.
 - Homepage curation is stored in the browser and is specific to that device and browser profile.
 
