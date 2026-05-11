@@ -2683,6 +2683,11 @@ function ViewerPage({
         return
       }
 
+      if (event.repeat && event.key.startsWith('Arrow')) {
+        event.preventDefault()
+        return
+      }
+
       if (event.key === 'ArrowRight') {
         event.preventDefault()
         moveBy(1, { userInitiated: true })
