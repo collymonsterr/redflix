@@ -8,6 +8,7 @@ RedFlix is a private Reddit media viewer built for fast browsing of image, GIF, 
 - Viewer, grid, and cinema browsing modes
 - Quality-first browsing with freshness cooldowns to avoid yesterday's repeats
 - Sound-aware video browsing with `Sound` and `Silent` filters where RedFlix can classify audio
+- Creator browsing supports both Reddit `/u/...` and `/user/...` links
 - Favorites, followed creators, and followed subreddits
 - Comment preview panel with links back to the Reddit thread
 - Quick-exit safe cover screen with a return button

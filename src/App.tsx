@@ -4535,7 +4535,7 @@ function parseRoute(pathname: string): Route {
     }
   }
 
-  const authorMatch = pathname.match(/^\/u\/([^/]+)\/?$/i)
+  const authorMatch = pathname.match(/^\/(?:u|user)\/([^/]+)\/?$/i)
   if (authorMatch?.[1]) {
     return {
       kind: 'author',

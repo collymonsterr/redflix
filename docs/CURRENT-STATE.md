@@ -7,7 +7,7 @@ This document is the quickest snapshot of what RedFlix does today.
 - `/` - SFW homepage. This is the default landing page.
 - `/nsfw` - NSFW homepage. NSFW does not load by default unless the user opens this route or switches into it deliberately.
 - `/r/:subreddit` - subreddit viewer and grid.
-- `/u/:username` - creator gallery sourced from that user's posts.
+- `/u/:username` or `/user/:username` - creator gallery sourced from that user's posts.
 - `/favorites` - saved favorites.
 - `/following/creators` - feed of followed creators.
 - `/following/subreddits` - feed of followed subreddits.
