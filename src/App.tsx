@@ -1732,7 +1732,7 @@ function ViewerPage({
   const [soundBlockedItemKey, setSoundBlockedItemKey] = useState('')
   const [soundUnavailableItemKey, setSoundUnavailableItemKey] = useState('')
   const [mediaErrorItemKey, setMediaErrorItemKey] = useState('')
-  const [exemptSeenItemKey, setExemptSeenItemKey] = useState('')
+  const [freshnessExemptKeys, setFreshnessExemptKeys] = useState<Record<string, true>>({})
   const [commentsOpen, setCommentsOpen] = useState(false)
   const [comments, setComments] = useState<RedditComment[]>([])
   const [commentsStatus, setCommentsStatus] = useState<
@@ -1846,7 +1846,7 @@ function ViewerPage({
     () =>
       sourceItems.filter((item) =>
         matchesViewerFilters({
-          allowFreshnessItemKey: isGridMode ? '' : exemptSeenItemKey,
+          allowFreshnessItemKeys: isGridMode ? undefined : freshnessExemptKeys,
           item,
           nsfwEnabled,
           seenHistory,
@@ -1861,7 +1861,7 @@ function ViewerPage({
       ),
     [
       effectiveSelectedTag,
-      exemptSeenItemKey,
+      freshnessExemptKeys,
       favorites,
       isGridMode,
       nsfwEnabled,
@@ -1875,7 +1875,7 @@ function ViewerPage({
     () =>
       sourceItems.filter((item) =>
         matchesViewerFilters({
-          allowFreshnessItemKey: isGridMode ? '' : exemptSeenItemKey,
+          allowFreshnessItemKeys: isGridMode ? undefined : freshnessExemptKeys,
           item,
           nsfwEnabled,
           seenHistory,
@@ -1894,7 +1894,7 @@ function ViewerPage({
       ),
     [
       effectiveSelectedTag,
-      exemptSeenItemKey,
+      freshnessExemptKeys,
       favorites,
       isGridMode,
       nsfwEnabled,
@@ -1908,7 +1908,7 @@ function ViewerPage({
     () =>
       sourceItems.filter((item) =>
         matchesViewerFilters({
-          allowFreshnessItemKey: isGridMode ? '' : exemptSeenItemKey,
+          allowFreshnessItemKeys: isGridMode ? undefined : freshnessExemptKeys,
           item,
           nsfwEnabled,
           seenHistory,
@@ -1930,7 +1930,7 @@ function ViewerPage({
       ),
     [
       effectiveSelectedTag,
-      exemptSeenItemKey,
+      freshnessExemptKeys,
       favorites,
       isGridMode,
       nsfwEnabled,
@@ -2075,7 +2075,6 @@ function ViewerPage({
         setIsPaused(false)
         setSoundBlockedItemKey('')
         setMediaErrorItemKey('')
-        setExemptSeenItemKey('')
         setCommentsOpen(false)
         commentRequestIdRef.current += 1
         onSettingsChange((current) =>
@@ -2114,12 +2113,16 @@ function ViewerPage({
 
           const playPromise = node.play()
           if (playPromise) {
-            void playPromise.catch(() => {
-              setIsPaused(true)
-            })
-          }
-
-          if (audioNode && nextItemKey) {
+            void playPromise
+              .then(() => {
+                if (audioNode && nextItemKey) {
+                  tryStartSeparateAudio(audioNode, node, nextItemKey)
+                }
+              })
+              .catch(() => {
+                setIsPaused(true)
+              })
+          } else if (audioNode && nextItemKey) {
             tryStartSeparateAudio(audioNode, node, nextItemKey)
           }
         })
@@ -2164,7 +2167,6 @@ function ViewerPage({
       setIsPaused(false)
       setSoundBlockedItemKey('')
       setMediaErrorItemKey('')
-      setExemptSeenItemKey('')
       setCommentsOpen(false)
       commentRequestIdRef.current += 1
       onSettingsChange((current) =>
@@ -2206,9 +2208,16 @@ function ViewerPage({
 
           setIsPaused(false)
           if (playPromise) {
-            void playPromise.catch(() => {
-              setIsPaused(true)
-            })
+            void playPromise
+              .then(() => {
+                if (audioNode && !isSoundEffectivelyMuted) {
+                  tryStartSeparateAudio(audioNode, node, activeItem.key)
+                }
+              })
+              .catch(() => {
+                setIsPaused(true)
+              })
+            return
           }
 
           if (audioNode && !isSoundEffectivelyMuted) {
@@ -2262,11 +2271,22 @@ function ViewerPage({
 
     const playPromise = node.play()
     if (playPromise) {
-      void playPromise.catch(() => {
-        setIsPaused(true)
-      })
+      void playPromise
+        .then(() => {
+          if (audioNode && activeItem) {
+            tryStartSeparateAudio(audioNode, node, activeItem.key)
+          }
+        })
+        .catch(() => {
+          setIsPaused(true)
+        })
+      return
     }
-  }, [activeItem, revealChrome])
+
+    if (audioNode && activeItem) {
+      tryStartSeparateAudio(audioNode, node, activeItem.key)
+    }
+  }, [activeItem, revealChrome, tryStartSeparateAudio])
 
   const fetchRoutePage = useCallback(
     (pageAfter?: string | null): Promise<ListingPage> => {
@@ -2359,7 +2379,7 @@ function ViewerPage({
     fetchRoutePage(null)
       .then((page) => {
         if (ignore) return
-        setExemptSeenItemKey('')
+        setFreshnessExemptKeys({})
         setActiveIndex(initialSession?.index ?? 0)
         setProgress(0)
         setItems(page.items)
@@ -2621,29 +2641,38 @@ function ViewerPage({
       return
     }
 
+    const startSeparateAudio = () => {
+      if (audioNode && !isSoundEffectivelyMuted) {
+        tryStartSeparateAudio(audioNode, node, activeItem.key)
+      }
+    }
+
     const playPromise = node.play()
     if (playPromise) {
-      void playPromise.catch(() => {
-        if (!hasSeparateAudio && !settings.muted && activeItem) {
-          node.muted = true
-          setSoundBlockedItemKey(activeItem.key)
+      void playPromise
+        .then(() => {
+          startSeparateAudio()
+        })
+        .catch(() => {
+          if (!hasSeparateAudio && !settings.muted && activeItem) {
+            node.muted = true
+            setSoundBlockedItemKey(activeItem.key)
 
-          const mutedPlayPromise = node.play()
-          if (mutedPlayPromise) {
-            void mutedPlayPromise.catch(() => {
-              setIsPaused(true)
-            })
+            const mutedPlayPromise = node.play()
+            if (mutedPlayPromise) {
+              void mutedPlayPromise.catch(() => {
+                setIsPaused(true)
+              })
+            }
+            return
           }
-          return
-        }
 
-        setIsPaused(true)
-      })
+          setIsPaused(true)
+        })
+      return
     }
 
-    if (audioNode && !isSoundEffectivelyMuted) {
-      tryStartSeparateAudio(audioNode, node, activeItem.key)
-    }
+    startSeparateAudio()
   }, [
     activeItem,
     activeItem?.audioUrl,
@@ -2814,7 +2843,14 @@ function ViewerPage({
     if (!activeItem || lastRecordedItemRef.current === activeItem.key) return
 
     lastRecordedItemRef.current = activeItem.key
-    setExemptSeenItemKey(activeItem.key)
+    setFreshnessExemptKeys((current) =>
+      current[activeItem.key]
+        ? current
+        : {
+            ...current,
+            [activeItem.key]: true,
+          },
+    )
     onMarkSeen(activeItem.key)
     if (route.kind === 'subreddit') {
       onSessionUpdate(route.subreddit, {
@@ -2910,9 +2946,17 @@ function ViewerPage({
 
     const playPromise = node.play()
     if (playPromise) {
-      void playPromise.catch(() => {
-        setIsPaused(true)
-      })
+      void playPromise
+        .then(() => {
+          if (audioNode && activeItem) {
+            tryStartSeparateAudio(audioNode, node, activeItem.key)
+          }
+        })
+        .catch(() => {
+          setIsPaused(true)
+        })
+      setIsPaused(false)
+      return
     }
 
     if (audioNode) {
@@ -3496,7 +3540,7 @@ function ViewerPage({
                   isFullscreen={isFullscreen}
                   isMuted={isSoundEffectivelyMuted}
                   videoRef={videoRef}
-                  onAdvance={() => moveBy(1, { userInitiated: true })}
+                  onAdvance={() => moveBy(1)}
                   onMediaError={handleMediaError}
                   onAudioAvailability={(availability) => {
                     if (!activeItem) return
@@ -4713,13 +4757,13 @@ function matchesLandingMode({
 }
 
 function matchesViewerFilters({
-  allowFreshnessItemKey,
+  allowFreshnessItemKeys,
   item,
   nsfwEnabled,
   seenHistory,
   settings,
 }: {
-  allowFreshnessItemKey?: string
+  allowFreshnessItemKeys?: Record<string, true>
   item: ViewerItem
   nsfwEnabled: boolean
   seenHistory: SeenHistory
@@ -4763,7 +4807,7 @@ function matchesViewerFilters({
   if (freshnessWindowMs > 0) {
     const seenAt = seenHistory[item.key]
     if (
-      item.key !== allowFreshnessItemKey &&
+      !allowFreshnessItemKeys?.[item.key] &&
       typeof seenAt === 'number' &&
       Date.now() - seenAt < freshnessWindowMs
     ) {

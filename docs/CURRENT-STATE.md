@@ -38,6 +38,7 @@ This document is the quickest snapshot of what RedFlix does today.
 - Freshness filtering is built around local seen timestamps with `All`, `Today`, `3d`, and `7d` windows.
 - The viewer defaults to a `3d` freshness cooldown so returning visits stay fresher without abandoning quality-first sorting.
 - When the current page is too stale, the viewer can pull deeper Reddit pages automatically to top up fresh results.
+- Freshness filtering no longer ejects items you already stepped through in the current viewer session, so next/back navigation stays stable while you browse.
 - The top dock now exposes `All`, `Wide`, and `Tall` as quick view switches, while deeper sorting and timing controls live under `Controls`.
 - Reddit-style ranking controls such as `Hot`, `Top day`, `Top week`, `Top month`, and `Top all` live in the expanded controls row.
 - The controls row also includes `Sound` filters so known-audio and known-silent videos can be separated quickly.
@@ -46,6 +47,7 @@ This document is the quickest snapshot of what RedFlix does today.
 - Portrait items use vertical arrows and accept `↑` / `↓` keyboard navigation; landscape items use left/right arrows.
 - Known video-heavy subreddits can open with a smarter default orientation so TikTok-style feeds bias tall and wide-video feeds bias landscape.
 - Attempted autoplay with sound when moving to the next direct video.
+- Automatic next-item advance now behaves like autoplay rather than a manual skip, which makes end-of-video handoff more reliable.
 - Failed clips now stop on an inline error card with `Retry` and `Next` instead of silently skipping through the whole feed.
 - Reddit-hosted videos and some embed-backed posts can now be marked as known-sound or known-silent; fully opaque third-party embeds still fall back to `All` when audio cannot be classified ahead of time.
 - Hover controls in fullscreen for play/pause, mute, and the top viewer dock.
