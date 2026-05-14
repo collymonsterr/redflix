@@ -40,12 +40,14 @@ This document is the quickest snapshot of what RedFlix does today.
 - When the current page is too stale, the viewer can pull deeper Reddit pages automatically to top up fresh results.
 - The top dock now exposes `All`, `Wide`, and `Tall` as quick view switches, while deeper sorting and timing controls live under `Controls`.
 - Reddit-style ranking controls such as `Hot`, `Top day`, `Top week`, `Top month`, and `Top all` live in the expanded controls row.
+- The controls row also includes `Sound` filters so known-audio and known-silent videos can be separated quickly.
 - The viewer no longer shows an NSFW toggle in the top dock; it lives inside the `More` menu.
 - The right-side info panel can be hidden and reopened with the `Info` control.
 - Portrait items use vertical arrows and accept `↑` / `↓` keyboard navigation; landscape items use left/right arrows.
 - Known video-heavy subreddits can open with a smarter default orientation so TikTok-style feeds bias tall and wide-video feeds bias landscape.
 - Attempted autoplay with sound when moving to the next direct video.
 - Failed clips now stop on an inline error card with `Retry` and `Next` instead of silently skipping through the whole feed.
+- Reddit-hosted videos and some embed-backed posts can now be marked as known-sound or known-silent; fully opaque third-party embeds still fall back to `All` when audio cannot be classified ahead of time.
 - Hover controls in fullscreen for play/pause, mute, and the top viewer dock.
 - `Comments` button for lightweight comment preview before leaving the app.
 - `Reddit thread` button for opening the original Reddit post.

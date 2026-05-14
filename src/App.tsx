@@ -37,6 +37,7 @@ import {
   type MediaFilter,
   type OrientationFilter,
   type RedditComment,
+  type SoundFilter,
   type SortMode,
   type ViewerItem,
 } from './lib/reddit'
@@ -98,6 +99,7 @@ type OpenSubredditOptions = {
   displayMode?: DisplayMode
   mediaFilter?: MediaFilter
   orientationFilter?: OrientationFilter
+  soundFilter?: SoundFilter
   sortMode?: SortMode
   autoAdvance?: boolean
 }
@@ -105,6 +107,7 @@ type OpenAuthorOptions = {
   displayMode?: DisplayMode
   mediaFilter?: MediaFilter
   orientationFilter?: OrientationFilter
+  soundFilter?: SoundFilter
   sortMode?: SortMode
 }
 
@@ -292,6 +295,7 @@ function App() {
       const isPresetOpen =
         options?.mediaFilter ||
         options?.orientationFilter ||
+        options?.soundFilter ||
         options?.sortMode ||
         typeof options?.autoAdvance === 'boolean'
 
@@ -306,6 +310,7 @@ function App() {
           options?.orientationFilter ??
           inferredPreset?.orientationFilter ??
           defaultViewerSettings.orientationFilter,
+        soundFilter: options?.soundFilter ?? defaultViewerSettings.soundFilter,
         sortMode: options?.sortMode ?? defaultViewerSettings.sortMode,
         autoAdvance: options?.autoAdvance ?? defaultViewerSettings.autoAdvance,
         freshnessWindowDays: base.freshnessWindowDays,
@@ -326,6 +331,7 @@ function App() {
       options?.displayMode ||
       options?.mediaFilter ||
       options?.orientationFilter ||
+      options?.soundFilter ||
       options?.sortMode ||
       route.kind === 'cinema'
     ) {
@@ -334,6 +340,7 @@ function App() {
         displayMode: options?.displayMode ?? current.displayMode,
         mediaFilter: options?.mediaFilter ?? current.mediaFilter,
         orientationFilter: options?.orientationFilter ?? current.orientationFilter,
+        soundFilter: options?.soundFilter ?? current.soundFilter,
         sortMode: options?.sortMode ?? current.sortMode,
       }))
     }
@@ -1946,8 +1953,9 @@ function ViewerPage({
   const activeItem = filteredItems[safeIndex]
   const nextItem = filteredItems[safeIndex + 1]
   const isSoundBlocked = Boolean(activeItem && soundBlockedItemKey === activeItem.key)
+  const isKnownSilent = activeItem?.audioSupport === 'silent'
   const isSoundUnavailable = Boolean(
-    activeItem && soundUnavailableItemKey === activeItem.key,
+    activeItem && (isKnownSilent || soundUnavailableItemKey === activeItem.key),
   )
   const isSoundEffectivelyMuted = settings.muted || isSoundBlocked || isSoundUnavailable
   const hasSidePanel = !isGridMode && Boolean(activeItem) && showInfoPanel
@@ -2396,6 +2404,7 @@ function ViewerPage({
         if (
           current.mediaFilter === defaultViewerSettings.mediaFilter &&
           current.orientationFilter === defaultViewerSettings.orientationFilter &&
+          current.soundFilter === defaultViewerSettings.soundFilter &&
           current.freshnessWindowDays === defaultViewerSettings.freshnessWindowDays &&
           current.maxDuration === defaultViewerSettings.maxDuration
         ) {
@@ -2406,6 +2415,7 @@ function ViewerPage({
           ...current,
           mediaFilter: defaultViewerSettings.mediaFilter,
           orientationFilter: defaultViewerSettings.orientationFilter,
+          soundFilter: defaultViewerSettings.soundFilter,
           freshnessWindowDays: defaultViewerSettings.freshnessWindowDays,
           hideSeen: defaultViewerSettings.hideSeen,
           maxDuration: defaultViewerSettings.maxDuration,
@@ -2941,6 +2951,7 @@ function ViewerPage({
       displayMode: current.displayMode,
       mediaFilter: defaultViewerSettings.mediaFilter,
       orientationFilter: defaultViewerSettings.orientationFilter,
+      soundFilter: defaultViewerSettings.soundFilter,
       freshnessWindowDays: defaultViewerSettings.freshnessWindowDays,
       hideSeen: defaultViewerSettings.hideSeen,
       maxDuration: defaultViewerSettings.maxDuration,
@@ -3147,6 +3158,17 @@ function ViewerPage({
               onChange={(value) =>
                 updateSetting('orientationFilter', value as OrientationFilter)
               }
+            />
+
+            <FilterGroup
+              label="Sound"
+              options={[
+                ['all', 'All'],
+                ['sound', 'Sound'],
+                ['silent', 'Silent'],
+              ]}
+              value={settings.soundFilter}
+              onChange={(value) => updateSetting('soundFilter', value as SoundFilter)}
             />
 
             {sortOptions.length > 0 ? (
@@ -3668,6 +3690,7 @@ function ViewerPage({
                       displayMode: 'grid',
                       mediaFilter: defaultViewerSettings.mediaFilter,
                       orientationFilter: defaultViewerSettings.orientationFilter,
+                      soundFilter: defaultViewerSettings.soundFilter,
                       sortMode: 'all',
                     })
                   }
@@ -4711,6 +4734,18 @@ function matchesViewerFilters({
 
   if (settings.mediaFilter === 'videos' && item.mediaType !== 'video') {
     return false
+  }
+
+  if (settings.soundFilter === 'sound') {
+    if (item.mediaType !== 'video' || item.audioSupport !== 'with-sound') {
+      return false
+    }
+  }
+
+  if (settings.soundFilter === 'silent') {
+    if (item.mediaType !== 'video' || item.audioSupport !== 'silent') {
+      return false
+    }
   }
 
   if (

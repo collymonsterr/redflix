@@ -3,6 +3,7 @@ import { LruCache } from './lruCache'
 export type SortMode = 'hot' | 'day' | 'week' | 'month' | 'year' | 'all'
 export type MediaFilter = 'both' | 'photos' | 'videos'
 export type OrientationFilter = 'both' | 'portrait' | 'landscape'
+export type SoundFilter = 'all' | 'sound' | 'silent'
 export type FreshnessWindowDays = 0 | 1 | 3 | 7
 export type DisplayMode = 'viewer' | 'grid'
 export type ViewerItemKind = 'image' | 'video' | 'embed'
@@ -11,6 +12,7 @@ export type ViewerItemOrientation =
   | 'landscape'
   | 'square'
   | 'unknown'
+export type ViewerItemAudioSupport = 'with-sound' | 'silent' | 'unknown'
 
 export type ViewerItem = {
   key: string
@@ -23,6 +25,7 @@ export type ViewerItem = {
   kind: ViewerItemKind
   mediaUrl: string
   audioUrl: string | null
+  audioSupport: ViewerItemAudioSupport
   posterUrl: string | null
   mediaType: 'photo' | 'video'
   orientation: ViewerItemOrientation
@@ -174,6 +177,7 @@ export const defaultViewerSettings = {
   displayMode: 'viewer' as DisplayMode,
   mediaFilter: 'both' as MediaFilter,
   orientationFilter: 'both' as OrientationFilter,
+  soundFilter: 'all' as SoundFilter,
   sortMode: 'hot' as SortMode,
   maxDuration: 180,
   freshnessWindowDays: 3 as FreshnessWindowDays,
@@ -210,6 +214,13 @@ export function normalizeViewerSettings(
     parsed.orientationFilter === 'both'
       ? parsed.orientationFilter
       : defaultViewerSettings.orientationFilter
+
+  const soundFilter: SoundFilter =
+    parsed.soundFilter === 'sound' ||
+    parsed.soundFilter === 'silent' ||
+    parsed.soundFilter === 'all'
+      ? parsed.soundFilter
+      : defaultViewerSettings.soundFilter
 
   const sortMode: SortMode =
     parsed.sortMode === 'day' ||
@@ -251,6 +262,7 @@ export function normalizeViewerSettings(
     displayMode,
     mediaFilter,
     orientationFilter,
+    soundFilter,
     sortMode,
     maxDuration,
     freshnessWindowDays,
@@ -513,6 +525,7 @@ function normalizePost(post: RedditPost): ViewerItem[] {
           kind: 'video',
           mediaUrl,
           audioUrl: buildRedditAudioUrl(redditVideo),
+          audioSupport: inferRedditVideoAudioSupport(redditVideo),
           posterUrl: resolvePreviewImage(post),
           mediaType: 'video',
           width,
@@ -542,6 +555,7 @@ function normalizePost(post: RedditPost): ViewerItem[] {
           kind: 'embed',
           mediaUrl: iframeSrc,
           audioUrl: null,
+          audioSupport: inferPostAudioSupport(embedSource),
           posterUrl:
             decodeHtml(oembed?.thumbnail_url ?? '') || resolvePreviewImage(post),
           mediaType: 'video',
@@ -572,10 +586,11 @@ function normalizePost(post: RedditPost): ViewerItem[] {
   return [
     createItem(post, {
       keySuffix: normalizedDirect.kind,
-          kind: normalizedDirect.kind,
-          mediaUrl: normalizedDirect.mediaUrl,
-          audioUrl: null,
-          posterUrl: normalizedDirect.posterUrl ?? resolvePreviewImage(post),
+      kind: normalizedDirect.kind,
+      mediaUrl: normalizedDirect.mediaUrl,
+      audioUrl: null,
+      audioSupport: normalizedDirect.audioSupport,
+      posterUrl: normalizedDirect.posterUrl ?? resolvePreviewImage(post),
       mediaType: normalizedDirect.mediaType,
       width: normalizedDirect.width ?? resolvePreviewImageSize(post).width,
       height: normalizedDirect.height ?? resolvePreviewImageSize(post).height,
@@ -607,6 +622,7 @@ function normalizeGallery(post: RedditPost, source: RedditPost): ViewerItem[] {
           kind: 'video',
           mediaUrl: videoUrl,
           audioUrl: null,
+          audioSupport: 'unknown',
           posterUrl: imageUrl || resolvePreviewImage(post),
           mediaType: 'video',
           width,
@@ -621,12 +637,13 @@ function normalizeGallery(post: RedditPost, source: RedditPost): ViewerItem[] {
     if (!imageUrl) return []
 
     return [
-      createItem(post, {
-        keySuffix: `gallery-${index + 1}`,
-        kind: 'image',
-        mediaUrl: imageUrl,
-        audioUrl: null,
-        posterUrl: imageUrl,
+        createItem(post, {
+          keySuffix: `gallery-${index + 1}`,
+          kind: 'image',
+          mediaUrl: imageUrl,
+          audioUrl: null,
+          audioSupport: 'silent',
+          posterUrl: imageUrl,
         mediaType: 'photo',
         width,
         height,
@@ -645,6 +662,7 @@ function createItem(
     kind: ViewerItemKind
     mediaUrl: string
     audioUrl: string | null
+    audioSupport: ViewerItemAudioSupport
     posterUrl: string | null
     mediaType: 'photo' | 'video'
     width: number | null
@@ -667,6 +685,7 @@ function createItem(
     kind: input.kind,
     mediaUrl: input.mediaUrl,
     audioUrl: input.audioUrl,
+    audioSupport: input.audioSupport,
     posterUrl: input.posterUrl,
     mediaType: input.mediaType,
     orientation: getOrientation(input.width, input.height),
@@ -708,6 +727,19 @@ function buildRedditAudioUrl(video?: RedditVideoBlock | null) {
   }
 }
 
+function inferRedditVideoAudioSupport(
+  video?: RedditVideoBlock | null,
+): ViewerItemAudioSupport {
+  if (!video) return 'unknown'
+  if (video.has_audio === true) return 'with-sound'
+  if (video.has_audio === false) return 'silent'
+  return 'unknown'
+}
+
+function inferPostAudioSupport(post: RedditPost): ViewerItemAudioSupport {
+  return inferRedditVideoAudioSupport(post.preview?.reddit_video_preview)
+}
+
 function normalizeExternalMedia(post: RedditPost, mediaUrl: string) {
   if (!mediaUrl) return null
 
@@ -734,6 +766,7 @@ function normalizeExternalMedia(post: RedditPost, mediaUrl: string) {
         kind: 'video' as const,
         mediaType: 'video' as const,
         mediaUrl: mediaUrl.replace(/\.gifv$/i, '.mp4'),
+        audioSupport: 'silent' as const,
         posterUrl: preview,
         width: previewSize.width,
         height: previewSize.height,
@@ -746,6 +779,7 @@ function normalizeExternalMedia(post: RedditPost, mediaUrl: string) {
         kind: 'video' as const,
         mediaType: 'video' as const,
         mediaUrl,
+        audioSupport: inferPostAudioSupport(post),
         posterUrl: preview,
         width: previewSize.width,
         height: previewSize.height,
@@ -758,6 +792,7 @@ function normalizeExternalMedia(post: RedditPost, mediaUrl: string) {
         kind: 'image' as const,
         mediaType: 'photo' as const,
         mediaUrl,
+        audioSupport: 'silent' as const,
         posterUrl: mediaUrl,
         width: previewSize.width,
         height: previewSize.height,
@@ -772,6 +807,7 @@ function normalizeExternalMedia(post: RedditPost, mediaUrl: string) {
       kind: 'image' as const,
       mediaType: 'photo' as const,
       mediaUrl: `https://i.imgur.com/${imageId}.jpg`,
+      audioSupport: 'silent' as const,
       posterUrl: `https://i.imgur.com/${imageId}.jpg`,
       width: previewSize.width,
       height: previewSize.height,
@@ -787,6 +823,7 @@ function normalizeExternalMedia(post: RedditPost, mediaUrl: string) {
       kind: 'embed' as const,
       mediaType: 'video' as const,
       mediaUrl: `https://www.redgifs.com/ifr/${slug}`,
+      audioSupport: inferPostAudioSupport(post),
       posterUrl: preview,
       width: previewSize.width,
       height: previewSize.height,
@@ -803,6 +840,7 @@ function normalizeExternalMedia(post: RedditPost, mediaUrl: string) {
       kind: 'embed' as const,
       mediaType: 'video' as const,
       mediaUrl: `https://www.redgifs.com/ifr/${slug}`,
+      audioSupport: inferPostAudioSupport(post),
       posterUrl: preview,
       width: previewSize.width,
       height: previewSize.height,
@@ -815,6 +853,7 @@ function normalizeExternalMedia(post: RedditPost, mediaUrl: string) {
       kind: 'video' as const,
       mediaType: 'video' as const,
       mediaUrl,
+      audioSupport: inferPostAudioSupport(post),
       posterUrl: preview,
       width: previewSize.width,
       height: previewSize.height,
@@ -827,6 +866,7 @@ function normalizeExternalMedia(post: RedditPost, mediaUrl: string) {
       kind: 'image' as const,
       mediaType: 'photo' as const,
       mediaUrl,
+      audioSupport: 'silent' as const,
       posterUrl: mediaUrl,
       width: previewSize.width,
       height: previewSize.height,
