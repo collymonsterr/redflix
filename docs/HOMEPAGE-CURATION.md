@@ -22,7 +22,7 @@ Each mode has its own set of editable content.
 - homepage sections
 - landscape video showcase row
 - portrait video showcase row
-- text-only subreddit directory near the bottom
+- additional NSFW category rows lower down
 
 ## How the Editor Works
 
@@ -82,7 +82,5 @@ That means:
 - Keep section names short so the homepage stays clean.
 - Use showcase rows for subs that are reliably video-heavy, and keep landscape and portrait choices intentional.
 - On the NSFW home, the best pattern is usually: amateur/photo discovery first, sound-on wide video second, and GIF or quick-clip rows third.
-- The homepage now caps visual rows to two clean lines before `Show more`, so avoid bloating any one section with too many must-see items.
-- Use regular section rows for the highest-priority browsing buckets.
-- Lower-priority or long-tail groups work better in the compact text directory than as full card rows.
+- The homepage now presents categories as single horizontal lanes, so each section should feel like a tight, intentional row rather than a giant catch-all bucket.
 - If a subreddit preview looks stale after major curation changes, a refresh is usually enough.

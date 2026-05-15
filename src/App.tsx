@@ -1,5 +1,4 @@
 import {
-  Children,
   useCallback,
   useEffect,
   useMemo,
@@ -744,29 +743,24 @@ function LandingPage({
   const activePortraitShowcase = nsfwEnabled
     ? homepageCuration.nsfwPortraitShowcase
     : homepageCuration.sfwPortraitShowcase
-  const primaryDiscoverySection = discoverySections[0] ?? null
-  const compactDiscoverySections = discoverySections.slice(1)
-  const compactDirectorySections = nsfwEnabled
-    ? [...compactDiscoverySections, ...homepageCuration.nsfwMoreSections]
-    : compactDiscoverySections
-  const featuredSectionTitle = nsfwEnabled ? 'Real & Amateur' : 'Start Here'
+  const homepageSections = nsfwEnabled
+    ? discoverySections.filter(
+        (section) =>
+          section.title !== 'Sound-On Video' && section.title !== 'GIFs & Quick Clips',
+      )
+    : discoverySections
+  const additionalHomepageSections = nsfwEnabled
+    ? homepageCuration.nsfwMoreSections.filter(
+        (section) =>
+          !homepageSections.some(
+            (primarySection) =>
+              primarySection.title.toLowerCase() === section.title.toLowerCase(),
+          ),
+      )
+    : []
   const placeholder = nsfwEnabled
     ? 'Open /r/gonewild, /r/NSFW_GIF, /r/RealGirls...'
     : 'Open /r/pics, /r/gifs, /u/example...'
-  const quickLinks = discoverySections
-    .flatMap((section) => section.subreddits)
-    .filter((subreddit, index, collection) => {
-      if (collection.findIndex((entry) => entry.toLowerCase() === subreddit.toLowerCase()) !== index) {
-        return false
-      }
-
-      return matchesLandingMode({
-        subreddit,
-        nsfwEnabled,
-        sessions,
-      })
-    })
-    .slice(0, 6)
   const modeSavedSubreddits = savedSubreddits.filter((subreddit) =>
     matchesLandingMode({
       subreddit,
@@ -800,101 +794,36 @@ function LandingPage({
       <header className="landing-topbar">
         <div className="brand-lockup">
           <img className="brand-logo" src="/redflix-logo.png" alt="RedFlix" />
-          <p className="landing-mode-badge">{nsfwEnabled ? 'NSFW home' : 'SFW home'}</p>
         </div>
-      </header>
-
-      <section className="landing-hero">
-        <div className="landing-launch">
-          <div className="landing-intro">
-            <p className="landing-kicker">{nsfwEnabled ? 'Adult gallery' : 'Clean gallery'}</p>
-            <h1>{nsfwEnabled ? 'Open a feed or jump straight into a lane.' : 'Open a subreddit, creator, or quick lane.'}</h1>
-          </div>
-
-          <form className="search-bar landing-search" onSubmit={handleSubmit}>
-            <input
-              aria-label="Open subreddit or creator"
-              placeholder={placeholder}
-              value={searchValue}
-              onChange={(event) => setSearchValue(event.target.value)}
-            />
-            <button type="submit">Open</button>
-          </form>
-
-          {quickLinks.length > 0 ? (
-            <div className="landing-chip-block">
-              <span>Popular now</span>
-              <div className="quick-links">
-                {quickLinks.map((name) => (
-                  <button key={name} type="button" onClick={() => openLandingSubreddit(name)}>
-                    /r/{name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          {modeSavedSubreddits.length > 0 ? (
-            <div className="landing-chip-block">
-              <span>Saved subs</span>
-              <div className="quick-links">
-                {modeSavedSubreddits.slice(0, 8).map((subreddit) => (
-                  <button
-                    key={`saved-${subreddit}`}
-                    type="button"
-                    onClick={() => openLandingSubreddit(subreddit)}
-                  >
-                    /r/{subreddit}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
-        </div>
-
-        <aside className="landing-utility-grid" aria-label="Library shortcuts">
-          <button className="landing-utility-card" type="button" onClick={onOpenFavorites}>
-            <HeartIcon />
-            <strong>{favoriteCount}</strong>
-            <span>Favorites</span>
-          </button>
-          <button
-            className="landing-utility-card"
-            type="button"
-            onClick={onOpenFollowingCreators}
-          >
-            <CreatorIcon />
-            <strong>{followedCreatorCount}</strong>
-            <span>Creators</span>
-          </button>
-          <button
-            className="landing-utility-card"
-            type="button"
-            onClick={onOpenFollowingSubreddits}
-          >
-            <SubredditIcon />
-            <strong>{followedSubredditCount}</strong>
-            <span>Subreddits</span>
-          </button>
-          <button className="landing-utility-card" type="button" onClick={onOpenPrivacyDialog}>
-            <LockIcon />
-            <strong>{hasPrivacyLock ? 'On' : 'Off'}</strong>
-            <span>{hasPrivacyLock ? 'Privacy lock' : 'Set lock'}</span>
-          </button>
+        <form className="search-bar landing-search landing-search--topbar" onSubmit={handleSubmit}>
+          <input
+            aria-label="Open subreddit or creator"
+            placeholder={placeholder}
+            value={searchValue}
+            onChange={(event) => setSearchValue(event.target.value)}
+          />
+          <button type="submit">Open</button>
+        </form>
+        <div className="nav-actions">
           {nsfwEnabled ? (
-            <button className="landing-utility-card landing-utility-card--feature" type="button" onClick={onOpenCinema}>
-              <CinemaIcon />
-              <strong>Wide</strong>
-              <span>Cinema mode</span>
+            <button className="viewer-link muted" type="button" onClick={onOpenCinema}>
+              Cinema
             </button>
           ) : null}
-          <button className="landing-utility-card" type="button" onClick={onOpenCurationEditor}>
-            <SettingsIcon />
-            <strong>Edit</strong>
-            <span>Homepage</span>
+          <button className="viewer-link muted" type="button" onClick={onOpenFavorites}>
+            Favorites {favoriteCount}
           </button>
-        </aside>
-      </section>
+          <button className="viewer-link muted" type="button" onClick={onOpenFollowingCreators}>
+            Creators {followedCreatorCount}
+          </button>
+          <button className="viewer-link muted" type="button" onClick={onOpenFollowingSubreddits}>
+            Subs {followedSubredditCount}
+          </button>
+          <button className="viewer-link muted" type="button" onClick={onOpenCurationEditor}>
+            Edit home
+          </button>
+        </div>
+      </header>
 
       {modeContinueWatching.length > 0 ? (
         <SectionRow title="Continue">
@@ -904,93 +833,96 @@ function LandingPage({
               forcedPoster={session.posterUrl}
               nsfwEnabled={nsfwEnabled}
               subreddit={session.subreddit}
+              title={formatHomepageSubredditTitle(session.subreddit, nsfwEnabled)}
               onOpenSubreddit={openLandingSubreddit}
             />
           ))}
         </SectionRow>
       ) : null}
 
-      {primaryDiscoverySection ? (
-        <SectionRow
-          hint={
-            nsfwEnabled
-              ? 'The amateur-first lane, kept to two clean rows before expanding.'
-              : 'The strongest all-round places to start, kept tight before expanding.'
-          }
-          title={featuredSectionTitle}
-        >
-          {primaryDiscoverySection.subreddits.map((subreddit) => (
+      {modeSavedSubreddits.length > 0 ? (
+        <SectionRow title="Saved subs">
+          {modeSavedSubreddits.map((subreddit) => (
             <SubredditTile
-              key={`${nsfwEnabled ? 'nsfw' : 'sfw'}-${primaryDiscoverySection.title}-${subreddit}`}
-              forcedPoster={sessions[toSessionKey(subreddit)]?.posterUrl ?? null}
+              key={`saved-${subreddit}`}
               nsfwEnabled={nsfwEnabled}
               subreddit={subreddit}
+              title={formatHomepageSubredditTitle(subreddit, nsfwEnabled)}
               onOpenSubreddit={openLandingSubreddit}
             />
           ))}
         </SectionRow>
       ) : null}
 
-      <div className="landing-showcase-grid">
+      <SectionRow title="Wide video" variant="showcase-landscape">
+        {activeLandscapeShowcase.map((entry) => (
+          <SubredditTile
+            key={entry.subreddit}
+            nsfwEnabled={nsfwEnabled}
+            previewEnabled
+            previewMediaType="video"
+            previewOrientation="landscape"
+            posterAspect="landscape"
+            subreddit={entry.subreddit}
+            title={formatHomepageSubredditTitle(entry.subreddit, nsfwEnabled)}
+            onOpenSubreddit={onOpenLandscapeSubreddit}
+          />
+        ))}
+      </SectionRow>
+
+      <SectionRow title="Tall video" variant="showcase-portrait">
+        {activePortraitShowcase.map((entry) => (
+          <SubredditTile
+            key={entry.subreddit}
+            nsfwEnabled={nsfwEnabled}
+            previewEnabled
+            previewMediaType="video"
+            previewOrientation="portrait"
+            posterAspect="portrait"
+            subreddit={entry.subreddit}
+            title={formatHomepageSubredditTitle(entry.subreddit, nsfwEnabled)}
+            onOpenSubreddit={onOpenPortraitSubreddit}
+          />
+        ))}
+      </SectionRow>
+
+      {homepageSections.map((section) => (
         <SectionRow
-          hint={
-            nsfwEnabled
-              ? 'Landscape-first video with better odds of real audio.'
-              : 'Wider video feeds for desktop and autoplay browsing.'
-          }
-          title="Wide video"
-          variant="showcase-landscape"
+          key={`${nsfwEnabled ? 'nsfw' : 'sfw'}-${section.title}`}
+          title={section.title}
         >
-          {activeLandscapeShowcase.map((entry) => (
+          {section.subreddits.map((subreddit) => (
             <SubredditTile
-              key={entry.subreddit}
+              key={`${nsfwEnabled ? 'nsfw' : 'sfw'}-${section.title}-${subreddit}`}
+              forcedPoster={sessions[toSessionKey(subreddit)]?.posterUrl ?? null}
               nsfwEnabled={nsfwEnabled}
-              previewEnabled
-              previewMediaType="video"
-              previewOrientation="landscape"
-              posterAspect="landscape"
-              subreddit={entry.subreddit}
-              onOpenSubreddit={onOpenLandscapeSubreddit}
+              posterAspect={isLandscapeDiscoverySection(section.title, nsfwEnabled) ? 'landscape' : 'portrait'}
+              subreddit={subreddit}
+              title={formatHomepageSubredditTitle(subreddit, nsfwEnabled)}
+              onOpenSubreddit={openLandingSubreddit}
             />
           ))}
         </SectionRow>
+      ))}
 
+      {additionalHomepageSections.map((section) => (
         <SectionRow
-          hint={
-            nsfwEnabled
-              ? 'Portrait clips and cleaner no-sound GIF lanes.'
-              : 'Tall mobile-style clips and quick-scroll feeds.'
-          }
-          title="Tall video"
-          variant="showcase-portrait"
+          key={`${nsfwEnabled ? 'nsfw-extra' : 'sfw-extra'}-${section.title}`}
+          title={section.title}
         >
-          {activePortraitShowcase.map((entry) => (
+          {section.subreddits.map((subreddit) => (
             <SubredditTile
-              key={entry.subreddit}
+              key={`${nsfwEnabled ? 'nsfw-extra' : 'sfw-extra'}-${section.title}-${subreddit}`}
+              forcedPoster={sessions[toSessionKey(subreddit)]?.posterUrl ?? null}
               nsfwEnabled={nsfwEnabled}
-              previewEnabled
-              previewMediaType="video"
-              previewOrientation="portrait"
-              posterAspect="portrait"
-              subreddit={entry.subreddit}
-              onOpenSubreddit={onOpenPortraitSubreddit}
+              posterAspect={isLandscapeDiscoverySection(section.title, nsfwEnabled) ? 'landscape' : 'portrait'}
+              subreddit={subreddit}
+              title={formatHomepageSubredditTitle(subreddit, nsfwEnabled)}
+              onOpenSubreddit={openLandingSubreddit}
             />
           ))}
         </SectionRow>
-      </div>
-
-      {compactDirectorySections.length > 0 ? (
-        <TextSubredditDirectory
-          hint={
-            nsfwEnabled
-              ? 'The long tail stays compact here so the homepage can stay focused on amateur, wide video, and quick clips.'
-              : 'Everything else stays compact here so the homepage stays fast to scan.'
-          }
-          sections={compactDirectorySections}
-          title="Explore"
-          onOpenSubreddit={openLandingSubreddit}
-        />
-      ) : null}
+      ))}
 
       <footer className="landing-footer">
         <p>
@@ -1007,6 +939,15 @@ function LandingPage({
           ) : (
             '0 seen'
           )}{' '}
+          ·{' '}
+          <button
+            className="ghost-link"
+            style={{ fontSize: 'inherit', verticalAlign: 'baseline' }}
+            type="button"
+            onClick={onOpenPrivacyDialog}
+          >
+            {hasPrivacyLock ? 'privacy lock on' : 'set lock'}
+          </button>{' '}
           · local only ·{' '}
           <button
             className={`ghost-link landing-mode-link${nsfwEnabled ? ' is-active' : ''}`}
@@ -1361,9 +1302,9 @@ function HomepageCurationDialog({
                 onChange={(items) => updateDraft('nsfwPortraitShowcase', items)}
               />
               <SectionCollectionEditor
-                description="The text-only directory near the bottom of the NSFW homepage."
+                description="Additional NSFW category rows shown lower on the homepage."
                 sections={draft.nsfwMoreSections}
-                title="Text directory"
+                title="Additional rows"
                 onChange={(sections) => updateDraft('nsfwMoreSections', sections)}
               />
             </>
@@ -1784,6 +1725,7 @@ function ViewerPage({
   const gridScrollTopRef = useRef(0)
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null)
   const lastRecordedItemRef = useRef('')
+  const currentItemKeyRef = useRef('')
   const commentRequestIdRef = useRef(0)
 
   const favoriteEntries = useMemo(
@@ -2266,12 +2208,21 @@ function ViewerPage({
     setShowInfoPanel((current) => !current)
   }, [revealChrome])
 
-  const handleMediaError = useCallback(() => {
-    if (!activeItem) return
-    setMediaErrorItemKey(activeItem.key)
+  const handleMediaError = useCallback((itemKey?: string) => {
+    const resolvedItemKey = itemKey ?? activeItem?.key
+    if (!resolvedItemKey || currentItemKeyRef.current !== resolvedItemKey) return
+    setMediaErrorItemKey(resolvedItemKey)
     setIsPaused(true)
     revealChrome()
-  }, [activeItem, revealChrome])
+  }, [activeItem?.key, revealChrome])
+
+  const handleStageAdvance = useCallback(
+    (itemKey: string) => {
+      if (currentItemKeyRef.current !== itemKey) return
+      moveBy(1)
+    },
+    [moveBy],
+  )
 
   const handleRetryMedia = useCallback(() => {
     if (!activeItem || activeItem.kind !== 'video') return
@@ -2431,6 +2382,10 @@ function ViewerPage({
   useEffect(() => {
     warmMediaAsset(nextItem)
   }, [nextItem])
+
+  useEffect(() => {
+    currentItemKeyRef.current = activeItem?.key ?? ''
+  }, [activeItem?.key])
 
   useEffect(() => {
     if (
@@ -3515,8 +3470,8 @@ function ViewerPage({
                   isFullscreen={isFullscreen}
                   isMuted={isSoundEffectivelyMuted}
                   videoRef={videoRef}
-                  onAdvance={() => moveBy(1)}
-                  onMediaError={handleMediaError}
+                  onAdvance={() => handleStageAdvance(activeItem.key)}
+                  onMediaError={() => handleMediaError(activeItem.key)}
                   onAudioAvailability={(availability) => {
                     if (!activeItem) return
 
@@ -4367,39 +4322,6 @@ function SectionRow({
   title: string
   variant?: 'default' | 'showcase-landscape' | 'showcase-portrait'
 }) {
-  const items = useMemo(() => Children.toArray(children), [children])
-  const [isExpanded, setIsExpanded] = useState(false)
-  const rowRef = useRef<HTMLDivElement | null>(null)
-  const [collapsedCount, setCollapsedCount] = useState(() =>
-    getSectionPreviewCount(variant, items.length),
-  )
-
-  useEffect(() => {
-    const node = rowRef.current
-
-    const updateCollapsedCount = () => {
-      setCollapsedCount(
-        getSectionPreviewCount(variant, items.length, node?.clientWidth ?? null),
-      )
-    }
-
-    updateCollapsedCount()
-
-    if (!node || typeof ResizeObserver === 'undefined') {
-      return
-    }
-
-    const observer = new ResizeObserver(() => {
-      updateCollapsedCount()
-    })
-
-    observer.observe(node)
-    return () => observer.disconnect()
-  }, [items.length, variant])
-
-  const visibleItems = isExpanded ? items : items.slice(0, collapsedCount)
-  const hiddenCount = Math.max(0, items.length - collapsedCount)
-
   return (
     <section className="row-section">
       <header className="row-header">
@@ -4407,116 +4329,12 @@ function SectionRow({
           <p className="eyebrow">{title}</p>
           {hint ? <p className="row-hint">{hint}</p> : null}
         </div>
-        {hiddenCount > 0 ? (
-          <button
-            className="row-toggle-button"
-            type="button"
-            onClick={() => setIsExpanded((current) => !current)}
-          >
-            {isExpanded ? 'Show less' : `Show ${hiddenCount} more`}
-          </button>
-        ) : null}
       </header>
-      <div ref={rowRef} className={`tile-row ${variant ? `tile-row--${variant}` : ''}`}>
-        {visibleItems}
+      <div className={`tile-row ${variant ? `tile-row--${variant}` : ''}`}>
+        {children}
       </div>
     </section>
   )
-}
-
-function TextSubredditDirectory({
-  hint,
-  onOpenSubreddit,
-  sections,
-  title = 'More Subreddits',
-}: {
-  hint?: string
-  onOpenSubreddit: (value: string) => void
-  sections: Array<{ title: string; subreddits: string[] }>
-  title?: string
-}) {
-  const [expandedSections, setExpandedSections] = useState<string[]>([])
-
-  return (
-    <section className="text-directory">
-      <header className="row-header">
-        <div className="row-header-copy">
-          <p className="eyebrow">{title}</p>
-          <p className="row-hint">
-            {hint ??
-              'Text-only list for the basics, kept light so the homepage does not become a wall of cards.'}
-          </p>
-        </div>
-      </header>
-
-      <div className="text-directory-grid">
-        {sections.map((section) => {
-          const isExpanded = expandedSections.includes(section.title)
-          const visibleSubreddits = isExpanded
-            ? section.subreddits
-            : section.subreddits.slice(0, 6)
-          const hasMore = section.subreddits.length > visibleSubreddits.length
-
-          return (
-            <div key={section.title} className="text-directory-card">
-              <div className="text-directory-card-header">
-                <h3>
-                  {section.title}
-                  <span>{section.subreddits.length}</span>
-                </h3>
-                {section.subreddits.length > 6 ? (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setExpandedSections((current) =>
-                        isExpanded
-                          ? current.filter((title) => title !== section.title)
-                          : [...current, section.title],
-                      )
-                    }
-                  >
-                    {isExpanded ? 'Show less' : `Show ${section.subreddits.length - 6} more`}
-                  </button>
-                ) : null}
-              </div>
-
-              <div className="text-link-list">
-                {visibleSubreddits.map((subreddit) => (
-                  <button
-                    key={subreddit}
-                    type="button"
-                    onClick={() => onOpenSubreddit(subreddit)}
-                  >
-                    /r/{subreddit}
-                  </button>
-                ))}
-              </div>
-              {hasMore ? <p className="text-directory-fade">More hidden in this lane</p> : null}
-            </div>
-          )
-        })}
-      </div>
-    </section>
-  )
-}
-
-function getSectionPreviewCount(
-  variant: 'default' | 'showcase-landscape' | 'showcase-portrait',
-  itemCount: number,
-  containerWidth?: number | null,
-) {
-  if (itemCount <= 0) return 0
-
-  const fallbackWidth =
-    typeof window !== 'undefined' ? Math.max(window.innerWidth - 88, 320) : 1280
-  const width = Math.max(320, containerWidth ?? fallbackWidth)
-  const gap = variant === 'default' ? 12 : 14
-  const minimumCardWidth =
-    variant === 'showcase-landscape' ? 280 : 178
-  const columns = Math.max(1, Math.floor((width + gap) / (minimumCardWidth + gap)))
-  const collapsedCount = columns * 2
-
-  return Math.min(itemCount, collapsedCount)
 }
 
 function FilterGroup({
@@ -5238,6 +5056,40 @@ function formatStageTitle(title: string) {
     .trim()
 
   return cleaned || title.trim()
+}
+
+function formatHomepageSubredditTitle(subreddit: string, nsfwEnabled: boolean) {
+  if (nsfwEnabled) {
+    return `/r/${subreddit}`
+  }
+
+  const displayMap: Record<string, string> = {
+    accidentalwesanderson: 'Wes Anderson',
+    animalporn: 'Wildlife',
+    architectureporn: 'Architecture',
+    cityporn: 'City',
+    exposureporn: 'Exposure',
+    natureisfuckinglit: 'Nature Is Lit',
+    roomporn: 'Rooms',
+    seaporn: 'Sea',
+    skyporn: 'Sky',
+    spaceporn: 'Space',
+    villageporn: 'Villages',
+    weatherporn: 'Weather',
+    earthporn: 'Earth',
+    designporn: 'Design',
+    infrastructureporn: 'Infrastructure',
+  }
+
+  return displayMap[subreddit.toLowerCase()] ?? `/r/${subreddit}`
+}
+
+function isLandscapeDiscoverySection(title: string, nsfwEnabled: boolean) {
+  const normalized = title.trim().toLowerCase()
+
+  if (normalized.includes('sound-on') || normalized.includes('wide')) return true
+  if (!nsfwEnabled && normalized === 'motion & action') return true
+  return false
 }
 
 function buildTileGradient(seed: string) {

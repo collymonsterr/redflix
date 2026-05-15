@@ -18,12 +18,12 @@ This document is the quickest snapshot of what RedFlix does today.
 - SFW and NSFW home are intentionally separated.
 - The SFW homepage keeps NSFW access low-profile: the adult switch lives in the footer instead of the top bar.
 - The NSFW homepage now leads with an amateur-first photo row, then separates sound-on wide video from higher-quality GIF and quick-clip discovery.
-- The homepage now opens with a quieter two-column hero: search and quick launch on one side, library/manage shortcuts on the other.
-- Full-size homepage rows are deliberately limited: `Continue` if present, one featured row, then paired `Wide video` and `Tall video` lanes.
-- Saved subreddits are surfaced as compact chips in the hero instead of taking up a whole visual row.
-- The homepage leads with a small number of card-heavy sections, then pushes the long tail into a compact category browse area.
-- Visual homepage sections are capped to two clean rows before a `Show more` expansion so the page does not end with awkward leftover cards on a third line.
-- Wide-video and tall-video showcase rows are treated separately and can sit side by side on larger screens so portrait and landscape discovery do not fight each other.
+- The homepage now uses a much lighter top bar: logo, search, and a few small utility actions only.
+- Main discovery now happens through horizontal category lanes instead of stacked dashboard blocks.
+- Each homepage category is a single sideways-scrolling row of subreddit cards.
+- `Continue`, `Saved subs`, `Wide video`, and `Tall video` can all appear as their own lanes before the broader category rows.
+- Wide-video and tall-video lanes stay separate so portrait and landscape discovery do not fight each other.
+- The SFW homepage uses cleaned display labels for Reddit’s older `...Porn`-style safe-for-work subreddit names so the home view stays more presentable.
 - On the NSFW homepage, the regular subreddit links now open straight into viewer mode rather than dropping into grid first.
 - The `Edit home` button opens a local curation editor so homepage rows can be changed without code edits.
 - Homepage curation is stored in the browser and is specific to that device and browser profile.
