@@ -40,11 +40,12 @@ This document is the quickest snapshot of what RedFlix does today.
 - The viewer defaults to a `3d` freshness cooldown so returning visits stay fresher without abandoning quality-first sorting.
 - When the current page is too stale, the viewer can pull deeper Reddit pages automatically to top up fresh results.
 - Freshness filtering no longer ejects items you already stepped through in the current viewer session, so next/back navigation stays stable while you browse.
-- The top dock now exposes `All`, `Wide`, and `Tall` as quick view switches, while deeper sorting and timing controls live under `Controls`.
-- Reddit-style ranking controls such as `Hot`, `Top day`, `Top week`, `Top month`, and `Top all` live in the expanded controls row.
-- The controls row also includes `Sound` filters so known-audio and known-silent videos can be separated quickly.
-- The viewer no longer shows an NSFW toggle in the top dock; it lives inside the `More` menu.
-- The right-side info panel can be hidden and reopened with the `Info` control.
+- The top dock is now intentionally lean: `Home`, source, search, `Viewer / Grid`, `Filters`, and `Info`.
+- Quick `All / Wide / Tall` switching now lives inside the expanded filters panel instead of the main dock.
+- Reddit-style ranking controls such as `Hot`, `Top day`, `Top week`, `Top month`, and `Top all` live in the expanded filters panel.
+- The filters panel also includes `Sound` filters so known-audio and known-silent videos can be separated quickly.
+- Favorites, followed feeds, privacy, NSFW, cinema, and reset actions are now consolidated into the same filters/settings surface instead of living in a separate `More` menu.
+- The right-side info panel can be hidden and reopened with the `Info` control, and its actions are grouped into primary follow/autoplay actions and smaller secondary link-outs.
 - Portrait items use vertical arrows and accept `↑` / `↓` keyboard navigation; landscape items use left/right arrows.
 - Known video-heavy subreddits can open with a smarter default orientation so TikTok-style feeds bias tall and wide-video feeds bias landscape.
 - Attempted autoplay with sound when moving to the next direct video.
@@ -52,6 +53,7 @@ This document is the quickest snapshot of what RedFlix does today.
 - Failed clips now stop on an inline error card with `Retry` and `Next` instead of silently skipping through the whole feed.
 - Reddit-hosted videos and some embed-backed posts can now be marked as known-sound or known-silent; fully opaque third-party embeds still fall back to `All` when audio cannot be classified ahead of time.
 - Hover controls in fullscreen for play/pause, mute, and the top viewer dock.
+- The persistent keyboard shortcut hint line is gone; shortcuts stay the same, but the viewer chrome is less noisy.
 - `Comments` button for lightweight comment preview before leaving the app.
 - `Reddit thread` button for opening the original Reddit post.
 - `View creator` flow for creator-focused browsing.

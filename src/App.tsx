@@ -1956,6 +1956,7 @@ function ViewerPage({
 
   const activeItem = filteredItems[safeIndex]
   const nextItem = filteredItems[safeIndex + 1]
+  const activeDisplayTitle = activeItem ? formatStageTitle(activeItem.title) : ''
   const isSoundBlocked = Boolean(activeItem && soundBlockedItemKey === activeItem.key)
   const isKnownSilent = activeItem?.audioSupport === 'silent'
   const isSoundUnavailable = Boolean(
@@ -1975,16 +1976,6 @@ function ViewerPage({
         (entry) => entry.toLowerCase() === activeItem.subreddit.toLowerCase(),
       )
     : false
-  const routeCreatorFollowed =
-    route.kind === 'author' &&
-    followedCreators.some(
-      (entry) => entry.toLowerCase() === route.author.toLowerCase(),
-    )
-  const routeSubredditFollowed =
-    route.kind === 'subreddit' &&
-    followedSubreddits.some(
-      (entry) => entry.toLowerCase() === route.subreddit.toLowerCase(),
-    )
 
   const tryStartSeparateAudio = useCallback(
     (
@@ -3006,12 +2997,6 @@ function ViewerPage({
     }))
   }
 
-  const setQuickView = (nextValue: 'both' | 'landscape' | 'portrait') => {
-    revealChrome()
-    updateSetting('mediaFilter', nextValue === 'both' ? 'both' : 'videos')
-    updateSetting('orientationFilter', nextValue)
-  }
-
   return (
     <main
       ref={viewerShellRef}
@@ -3034,7 +3019,9 @@ function ViewerPage({
               value={searchValue}
               onChange={(event) => setSearchValue(event.target.value)}
             />
-            <button type="submit">Go</button>
+            <button className="viewer-search-submit" type="submit">
+              Go
+            </button>
           </form>
 
           <div className="viewer-dock-utility">
@@ -3055,135 +3042,45 @@ function ViewerPage({
                 </button>
             </div>
 
-            <div className="viewer-shape-switch" role="group" aria-label="Quick view">
-              <button
-                className={settings.orientationFilter === 'both' ? 'is-active' : ''}
-                type="button"
-                onClick={() => setQuickView('both')}
-              >
-                All
-              </button>
-              <button
-                className={settings.orientationFilter === 'landscape' ? 'is-active' : ''}
-                type="button"
-                onClick={() => setQuickView('landscape')}
-              >
-                Wide
-              </button>
-              <button
-                className={settings.orientationFilter === 'portrait' ? 'is-active' : ''}
-                type="button"
-                onClick={() => setQuickView('portrait')}
-              >
-                Tall
-              </button>
-            </div>
-
             <button
-              className={`viewer-link ${filtersOpen ? '' : 'muted'}`}
+              className={`viewer-utility-button ${filtersOpen ? 'is-active' : 'muted'}`}
+              title={filtersOpen ? 'Hide filters and settings' : 'Show filters and settings'}
               type="button"
               onClick={() => setFiltersOpen((current) => !current)}
             >
-              {filtersOpen ? 'Hide controls' : 'Controls'}
+              <SettingsIcon />
+              <span>Filters</span>
             </button>
 
             <button
-              className={`viewer-link ${showInfoPanel ? '' : 'muted'}`}
+              className={`viewer-utility-button ${showInfoPanel ? 'is-active' : 'muted'}`}
+              title={showInfoPanel ? 'Hide info panel' : 'Show info panel'}
               type="button"
               onClick={toggleInfoPanel}
             >
-              {showInfoPanel ? 'Hide info' : 'Info'}
+              <InfoIcon />
+              <span>Info</span>
             </button>
-
-            <details className="viewer-more-menu">
-              <summary className="viewer-link muted">More</summary>
-              <div className="viewer-more-panel">
-                <button
-                  className={`viewer-link ${
-                    isFavoritesRoute ? '' : 'muted'
-                  }`}
-                  type="button"
-                  onClick={onOpenFavorites}
-                >
-                  Favorites list {favoriteEntries.length}
-                </button>
-
-                <button
-                  className={`viewer-link ${
-                    isFollowingCreatorsRoute ? '' : 'muted'
-                  }`}
-                  type="button"
-                  onClick={onOpenFollowingCreators}
-                >
-                  Followed creators {followedCreators.length}
-                </button>
-
-                <button
-                  className={`viewer-link ${
-                    isFollowingSubredditsRoute ? '' : 'muted'
-                  }`}
-                  type="button"
-                  onClick={onOpenFollowingSubreddits}
-                >
-                  Followed subs {followedSubreddits.length}
-                </button>
-
-                <button className="viewer-link muted" type="button" onClick={onOpenPrivacyDialog}>
-                  {hasPrivacyLock ? 'Privacy' : 'Set lock'}
-                </button>
-
-                <button
-                  className={`viewer-link ${nsfwEnabled ? 'is-active' : 'muted'}`}
-                  type="button"
-                  onClick={onToggleNsfw}
-                >
-                  NSFW
-                </button>
-
-                {nsfwEnabled ? (
-                  <button
-                    className={`viewer-link ${isCinemaRoute ? 'is-active' : 'feature-link'}`}
-                    type="button"
-                    onClick={onOpenCinema}
-                  >
-                    Cinema
-                  </button>
-                ) : null}
-
-                {route.kind === 'author' ? (
-                  <button
-                    className={`viewer-link ${routeCreatorFollowed ? '' : 'muted'}`}
-                    type="button"
-                    onClick={() => onToggleFollowCreator(route.author)}
-                  >
-                    {routeCreatorFollowed ? 'Following creator' : 'Follow creator'}
-                  </button>
-                ) : null}
-
-                {route.kind === 'subreddit' ? (
-                  <button
-                    className={`viewer-link ${routeSubredditFollowed ? '' : 'muted'}`}
-                    type="button"
-                    onClick={() => onToggleFollowSubreddit(route.subreddit)}
-                  >
-                    {routeSubredditFollowed ? 'Following subreddit' : 'Follow subreddit'}
-                  </button>
-                ) : null}
-              </div>
-            </details>
           </div>
         </div>
 
-        {!isGridMode ? (
-          <p className="viewer-kbd-hint" aria-hidden="true">
-            {activeItem?.orientation === 'portrait'
-              ? '↑ ↓ navigate · Space pause · M mute · F fullscreen · Esc exit'
-              : '← → navigate · Space pause · M mute · F fullscreen · Esc exit'}
-          </p>
-        ) : null}
-
         {filtersOpen ? (
           <div className="viewer-dock-filters">
+            <FilterGroup
+              label="View"
+              options={[
+                ['both', 'All'],
+                ['landscape', 'Wide'],
+                ['portrait', 'Tall'],
+              ]}
+              value={settings.orientationFilter === 'both' ? 'both' : settings.orientationFilter}
+              onChange={(value) => {
+                const nextValue = value as 'both' | 'portrait' | 'landscape'
+                updateSetting('mediaFilter', nextValue === 'both' ? 'both' : 'videos')
+                updateSetting('orientationFilter', nextValue)
+              }}
+            />
+
             <FilterGroup
               label="Media"
               options={[
@@ -3227,21 +3124,6 @@ function ViewerPage({
                 onChange={(value) => updateSetting('sortMode', value as SortMode)}
               />
             ) : null}
-
-            <FilterGroup
-              label="View"
-              options={[
-                ['both', 'All'],
-                ['landscape', 'Wide'],
-                ['portrait', 'Tall'],
-              ]}
-              value={settings.orientationFilter === 'both' ? 'both' : settings.orientationFilter}
-              onChange={(value) => {
-                const nextValue = value as 'both' | 'portrait' | 'landscape'
-                updateSetting('mediaFilter', nextValue === 'both' ? 'both' : 'videos')
-                updateSetting('orientationFilter', nextValue)
-              }}
-            />
 
             <label className="slider-group compact-slider">
               <span>{settings.maxDuration}s max</span>
@@ -3328,6 +3210,65 @@ function ViewerPage({
                 onChange={setSelectedTag}
               />
             ) : null}
+
+            <div className="viewer-settings-actions">
+              <button
+                className={`viewer-link ${isFavoritesRoute ? '' : 'muted'}`}
+                type="button"
+                onClick={onOpenFavorites}
+              >
+                <HeartIcon />
+                <span>Favorites {favoriteEntries.length}</span>
+              </button>
+
+              <button
+                className={`viewer-link ${isFollowingCreatorsRoute ? '' : 'muted'}`}
+                type="button"
+                onClick={onOpenFollowingCreators}
+              >
+                <CreatorIcon />
+                <span>Creators {followedCreators.length}</span>
+              </button>
+
+              <button
+                className={`viewer-link ${isFollowingSubredditsRoute ? '' : 'muted'}`}
+                type="button"
+                onClick={onOpenFollowingSubreddits}
+              >
+                <SubredditIcon />
+                <span>Subreddits {followedSubreddits.length}</span>
+              </button>
+
+              <button className="viewer-link muted" type="button" onClick={onOpenPrivacyDialog}>
+                <LockIcon />
+                <span>{hasPrivacyLock ? 'Privacy' : 'Set lock'}</span>
+              </button>
+
+              <button
+                className={`viewer-link ${nsfwEnabled ? 'is-active' : 'muted'}`}
+                type="button"
+                onClick={onToggleNsfw}
+              >
+                <EyeIcon />
+                <span>NSFW</span>
+              </button>
+
+              {nsfwEnabled ? (
+                <button
+                  className={`viewer-link ${isCinemaRoute ? 'is-active' : 'muted'}`}
+                  type="button"
+                  onClick={onOpenCinema}
+                >
+                  <CinemaIcon />
+                  <span>Cinema</span>
+                </button>
+              ) : null}
+
+              <button className="viewer-link muted" type="button" onClick={resetContentFilters}>
+                <ResetIcon />
+                <span>Reset</span>
+              </button>
+            </div>
           </div>
         ) : null}
       </header>
@@ -3665,23 +3606,47 @@ function ViewerPage({
             <footer className="stage-footer is-visible">
               <div className="stage-footer-copy">
                 <div className="stage-footer-heading">
-                  <h3>{activeItem.title}</h3>
-                  <button
-                    className="stage-footer-dismiss"
-                    type="button"
-                    onClick={toggleInfoPanel}
-                  >
-                    Hide
-                  </button>
+                  <div className="stage-footer-title-wrap">
+                    <h3 title={activeItem.title}>{activeDisplayTitle}</h3>
+                    <p className="meta-copy">
+                      <span>{safeIndex + 1}/{filteredItems.length}</span>
+                      <span>u/{activeItem.author}</span>
+                      <span>/r/{activeItem.subreddit}</span>
+                      <span>{formatCompactCount(activeItem.score)} upvotes</span>
+                      <span>{formatCompactCount(activeItem.commentCount)} comments</span>
+                      {activeItem.duration ? (
+                        <span>{formatDuration(activeItem.duration)}</span>
+                      ) : null}
+                      {activeItem.galleryIndex && activeItem.galleryTotal ? (
+                        <span>
+                          {activeItem.galleryIndex}/{activeItem.galleryTotal}
+                        </span>
+                      ) : null}
+                    </p>
+                  </div>
+                  <div className="stage-panel-header-actions">
+                    <button
+                      aria-label={
+                        activeFavorite ? 'Remove from favorites' : 'Add to favorites'
+                      }
+                      className={`favorite-icon-button${activeFavorite ? ' is-active' : ''}`}
+                      type="button"
+                      onClick={() => onToggleFavorite(activeItem)}
+                      title={activeFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                    >
+                      <HeartIcon />
+                    </button>
+                    <button
+                      aria-label="Hide info panel"
+                      className="stage-footer-dismiss"
+                      title="Hide info panel"
+                      type="button"
+                      onClick={toggleInfoPanel}
+                    >
+                      <CloseIcon />
+                    </button>
+                  </div>
                 </div>
-                <p className="meta-copy">
-                  {safeIndex + 1}/{filteredItems.length} ·
-                  u/{activeItem.author} · /r/{activeItem.subreddit}
-                  {activeItem.duration ? ` · ${formatDuration(activeItem.duration)}` : ''}
-                  {activeItem.galleryIndex && activeItem.galleryTotal
-                    ? ` · ${activeItem.galleryIndex}/${activeItem.galleryTotal}`
-                    : ''}
-                </p>
                 {activeTags.length > 0 ? (
                   <div className="favorite-tag-list">
                     {activeTags.map((tag) => (
@@ -3695,43 +3660,43 @@ function ViewerPage({
 
               <div className="stage-footer-actions">
                 <button
-                  aria-label={activeFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                  className={`favorite-icon-button${activeFavorite ? ' is-active' : ''}`}
-                  type="button"
-                  onClick={() => onToggleFavorite(activeItem)}
-                  title={activeFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                >
-                  <HeartIcon />
-                </button>
-                <button
-                  className={activeCreatorFollowed ? 'is-active' : ''}
+                  className={`stage-action-button stage-action-button--primary ${
+                    activeCreatorFollowed ? 'is-active' : ''
+                  }`}
                   type="button"
                   onClick={() => onToggleFollowCreator(activeItem.author)}
                 >
-                  {activeCreatorFollowed ? 'Following creator' : 'Follow creator'}
+                  <CreatorIcon />
+                  <span>
+                    {activeCreatorFollowed ? 'Following creator' : 'Follow creator'}
+                  </span>
                 </button>
                 <button
-                  className={activeSubredditFollowed ? 'is-active' : ''}
+                  className={`stage-action-button stage-action-button--primary ${
+                    activeSubredditFollowed ? 'is-active' : ''
+                  }`}
                   type="button"
                   onClick={() => onToggleFollowSubreddit(activeItem.subreddit)}
                 >
-                  {activeSubredditFollowed ? 'Following subreddit' : 'Follow subreddit'}
-                </button>
-                {activeFavorite ? (
-                  <button type="button" onClick={handleEditFavoriteTags}>
-                    Tags
-                  </button>
-                ) : null}
-                {activeItem.mediaType === 'photo' ? (
-                  <button type="button" onClick={togglePause}>
-                    {isPaused ? 'Play' : 'Pause'}
-                  </button>
-                ) : null}
-                <button type="button" onClick={handleToggleFullscreen}>
-                  {isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+                  <SubredditIcon />
+                  <span>
+                    {activeSubredditFollowed
+                      ? 'Following subreddit'
+                      : 'Follow subreddit'}
+                  </span>
                 </button>
                 <button
-                  className="viewer-link muted"
+                  className={`stage-action-button stage-action-button--primary ${
+                    !isPaused ? 'is-active' : ''
+                  }`}
+                  type="button"
+                  onClick={togglePause}
+                >
+                  {isPaused ? <PlayIcon /> : <PauseIcon />}
+                  <span>{isPaused ? 'Resume autoplay' : 'Pause autoplay'}</span>
+                </button>
+                <button
+                  className="stage-action-button stage-action-button--secondary"
                   type="button"
                   onClick={() =>
                     onOpenAuthor(activeItem.author, {
@@ -3743,30 +3708,38 @@ function ViewerPage({
                     })
                   }
                 >
-                  View creator
+                  <CreatorIcon />
+                  <span>View creator</span>
                 </button>
                 <button
-                  className="viewer-link muted"
-                  type="button"
-                  onClick={() => onOpenSubreddit(activeItem.subreddit)}
-                >
-                  /r/{activeItem.subreddit}
-                </button>
-                <button
-                  className={commentsOpen ? 'is-active' : ''}
+                  className={`stage-action-button stage-action-button--secondary ${
+                    commentsOpen ? 'is-active' : ''
+                  }`}
                   type="button"
                   onClick={handleToggleComments}
                 >
-                  Comments
+                  <CommentIcon />
+                  <span>Comments</span>
                 </button>
                 <a
-                  className="viewer-link muted"
+                  className="stage-action-button stage-action-button--secondary"
                   href={activeItem.permalink}
                   rel="noreferrer"
                   target="_blank"
                 >
-                  Reddit thread
+                  <ThreadIcon />
+                  <span>Reddit thread</span>
                 </a>
+                {activeFavorite ? (
+                  <button
+                    className="stage-action-button stage-action-button--tertiary"
+                    type="button"
+                    onClick={handleEditFavoriteTags}
+                  >
+                    <TagIcon />
+                    <span>Tags</span>
+                  </button>
+                ) : null}
               </div>
               {commentsOpen ? (
                 <CommentPreviewCard
@@ -3951,6 +3924,102 @@ function HeartIcon() {
         strokeLinejoin="round"
         strokeWidth="1.9"
       />
+    </svg>
+  )
+}
+
+function SettingsIcon() {
+  return (
+    <svg aria-hidden="true" className="stroke-icon" viewBox="0 0 24 24">
+      <path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm-4 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
+    </svg>
+  )
+}
+
+function InfoIcon() {
+  return (
+    <svg aria-hidden="true" className="stroke-icon" viewBox="0 0 24 24">
+      <path d="M12 8h.01M11 12h1v5h1M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" />
+    </svg>
+  )
+}
+
+function CloseIcon() {
+  return (
+    <svg aria-hidden="true" className="stroke-icon" viewBox="0 0 24 24">
+      <path d="m6 6 12 12M18 6 6 18" />
+    </svg>
+  )
+}
+
+function CreatorIcon() {
+  return (
+    <svg aria-hidden="true" className="stroke-icon" viewBox="0 0 24 24">
+      <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0" />
+    </svg>
+  )
+}
+
+function SubredditIcon() {
+  return (
+    <svg aria-hidden="true" className="stroke-icon" viewBox="0 0 24 24">
+      <path d="M7 7h10v10H7zM7 12H4m16 0h-3M12 7V4m0 16v-3" />
+    </svg>
+  )
+}
+
+function CommentIcon() {
+  return (
+    <svg aria-hidden="true" className="stroke-icon" viewBox="0 0 24 24">
+      <path d="M6 17.5V20l3.2-2H18a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H6A2 2 0 0 0 4 7v9a2 2 0 0 0 2 2Z" />
+    </svg>
+  )
+}
+
+function ThreadIcon() {
+  return (
+    <svg aria-hidden="true" className="stroke-icon" viewBox="0 0 24 24">
+      <path d="M14 5h5v5M10 14 19 5M19 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h4" />
+    </svg>
+  )
+}
+
+function TagIcon() {
+  return (
+    <svg aria-hidden="true" className="stroke-icon" viewBox="0 0 24 24">
+      <path d="m20 13-7 7-9-9V4h7l9 9ZM8.5 8.5h.01" />
+    </svg>
+  )
+}
+
+function LockIcon() {
+  return (
+    <svg aria-hidden="true" className="stroke-icon" viewBox="0 0 24 24">
+      <path d="M7 10V7a5 5 0 0 1 10 0v3M6 10h12a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1Z" />
+    </svg>
+  )
+}
+
+function EyeIcon() {
+  return (
+    <svg aria-hidden="true" className="stroke-icon" viewBox="0 0 24 24">
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Zm9.5 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" />
+    </svg>
+  )
+}
+
+function CinemaIcon() {
+  return (
+    <svg aria-hidden="true" className="stroke-icon" viewBox="0 0 24 24">
+      <path d="M4 7h16v10H4zM9 7l2-3M13 7l2-3M8 12h.01M12 12h.01M16 12h.01" />
+    </svg>
+  )
+}
+
+function ResetIcon() {
+  return (
+    <svg aria-hidden="true" className="stroke-icon" viewBox="0 0 24 24">
+      <path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5" />
     </svg>
   )
 }
@@ -5119,6 +5188,24 @@ function formatDuration(valueInSeconds: number) {
   const minutes = Math.floor(valueInSeconds / 60)
   const seconds = Math.floor(valueInSeconds % 60)
   return `${minutes}:${String(seconds).padStart(2, '0')}`
+}
+
+function formatCompactCount(value: number) {
+  if (!Number.isFinite(value) || value <= 0) return '0'
+  if (value < 1000) return String(value)
+  if (value < 10000) return `${(value / 1000).toFixed(1).replace(/\.0$/, '')}k`
+  if (value < 1000000) return `${Math.round(value / 1000)}k`
+  return `${(value / 1000000).toFixed(1).replace(/\.0$/, '')}m`
+}
+
+function formatStageTitle(title: string) {
+  const cleaned = title
+    .replace(/\s*\[(?:oc|gif|video)\]\s*$/i, '')
+    .replace(/\s*\[\d{2,5}\s*[x×]\s*\d{2,5}\]\s*$/i, '')
+    .replace(/\s*\[(?:oc|gif|video)\]\s*$/i, '')
+    .trim()
+
+  return cleaned || title.trim()
 }
 
 function buildTileGradient(seed: string) {

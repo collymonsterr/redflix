@@ -21,6 +21,8 @@ export type ViewerItem = {
   author: string
   subreddit: string
   permalink: string
+  score: number
+  commentCount: number
   over18: boolean
   kind: ViewerItemKind
   mediaUrl: string
@@ -149,6 +151,8 @@ type RedditPost = {
   author: string
   subreddit: string
   permalink: string
+  score?: number
+  num_comments?: number
   over_18: boolean
   url?: string
   url_overridden_by_dest?: string
@@ -681,6 +685,8 @@ function createItem(
     author: post.author,
     subreddit: post.subreddit,
     permalink: `https://www.reddit.com${post.permalink}`,
+    score: post.score ?? 0,
+    commentCount: post.num_comments ?? 0,
     over18: post.over_18,
     kind: input.kind,
     mediaUrl: input.mediaUrl,
