@@ -81,6 +81,7 @@ That means:
 
 - Keep section names short so the homepage stays clean.
 - Use showcase rows for subs that are reliably video-heavy, and keep landscape and portrait choices intentional.
+- On the NSFW home, the best pattern is usually: amateur/photo discovery first, sound-on wide video second, and GIF or quick-clip rows third.
 - The homepage now caps visual rows to two clean lines before `Show more`, so avoid bloating any one section with too many must-see items.
 - Use regular section rows for the highest-priority browsing buckets.
 - Lower-priority or long-tail groups work better in the compact text directory than as full card rows.

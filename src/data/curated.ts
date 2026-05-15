@@ -107,83 +107,78 @@ export const curatedSfwSections: CuratedSection[] = [
 
 export const curatedNsfwSections: CuratedSection[] = [
   {
-    title: 'Start Here',
-    subreddits: [
-      'gonewild',
-      'nsfw',
-      'RealGirls',
-      'porn',
-      'NSFW_GIF',
-      'NSFW_HTML5',
-      'boobs',
-      'extramile',
-      'CarSexPorn',
-    ],
-  },
-  {
     title: 'Real & Amateur',
     subreddits: [
+      'gonewild',
+      'RealGirls',
       'amateur',
       'altgonewild',
-      'RealGirls',
       'normalnudes',
+      'PetiteGoneWild',
+      'collegesluts',
       'gonewildcurvy',
-      'gonewild30plus',
-      'GoneWildPlus',
       'AsiansGoneWild',
-      'extramile',
     ],
   },
   {
-    title: 'Sound-On Landscape',
+    title: 'Sound-On Video',
     subreddits: [
       'NSFW_HTML5',
       'porn_with_sounds',
+      'nsfw_videos',
+      'soundonporn',
       'joivids',
       'long_porn',
       'GoneWildTube',
-      'soundonporn',
       'nsfwtalking',
       'holdthemoan',
     ],
   },
   {
-    title: 'Shorts & Portrait',
-    subreddits: [
-      'tiktoknsfw',
-      'tiktokporn',
-      'holdthemoan',
-      'OnOff',
-      'TittyDrop',
-      'GirlsFinishingTheJob',
-      'porninfifteenseconds',
-      'nsfw_gifs',
-    ],
-  },
-  {
-    title: 'GIFs & Short Clips',
+    title: 'GIFs & Quick Clips',
     subreddits: [
       'NSFW_GIF',
-      'NSFW_HTML5',
       'nsfw_gifs',
       'porn_gifs',
       'holdthemoan',
+      'porninfifteenseconds',
+      'OnOff',
       'TittyDrop',
+      'GirlsFinishingTheJob',
       'WatchItForThePlot',
-      'nsfwhardcore',
     ],
   },
   {
     title: 'Outdoor & Public',
     subreddits: [
       'gwpublic',
-      'FlashingGirls',
-      'ChangingRooms',
-      'holdthemoan',
       'extramile',
+      'HereInMyCar',
+      'roadhead',
       'CarSexPorn',
       'PublicSexPorn',
       'RealPublicNudity',
+      'FlashingGirls',
+      'ChangingRooms',
+    ],
+  },
+  {
+    title: 'Women & Women',
+    subreddits: [
+      'lesbians',
+      'girlskissing',
+      'dykesgonewild',
+    ],
+  },
+  {
+    title: 'College & Petite',
+    subreddits: [
+      'petite',
+      'PetiteGoneWild',
+      'BustyPetite',
+      'collegesluts',
+      'smallboobs',
+      'fitgirls',
     ],
   },
   {
@@ -193,8 +188,6 @@ export const curatedNsfwSections: CuratedSection[] = [
       'ass',
       'pussy',
       'milf',
-      'gonewildcurvy',
-      'BustyPetite',
       'BigBoobsGW',
       'Asstastic',
       'thick',
@@ -205,28 +198,25 @@ export const curatedNsfwSections: CuratedSection[] = [
 export const curatedNsfwCinemaSources = [
   'NSFW_HTML5',
   'porn_with_sounds',
+  'nsfw_videos',
   'long_porn',
   'joivids',
   'GoneWildTube',
   'soundonporn',
   'nsfwtalking',
   'holdthemoan',
-  'porninfifteenseconds',
-  'WatchItForThePlot',
-  '60fpsporn',
 ]
 
 export const curatedNsfwMoreSections: TextSubredditSection[] = [
   {
-    title: 'Main Galleries',
+    title: 'Popular Galleries',
     subreddits: [
       'gonewild',
       'RealGirls',
       'amateur',
       'altgonewild',
       'normalnudes',
-      'extramile',
-      'CarSexPorn',
+      'nsfw',
       'gonewild30plus',
       'gonewildcurvy',
       'GoneWildPlus',
@@ -236,27 +226,61 @@ export const curatedNsfwMoreSections: TextSubredditSection[] = [
   {
     title: 'Sound-On Video',
     subreddits: [
+      'NSFW_HTML5',
       'porn_with_sounds',
+      'nsfw_videos',
+      'soundonporn',
       'joivids',
       'long_porn',
       'GoneWildTube',
-      'soundonporn',
       'nsfwtalking',
-      'NSFW_HTML5',
       'holdthemoan',
     ],
   },
   {
-    title: 'Short Clips',
+    title: 'GIFs & Quick Clips',
     subreddits: [
       'NSFW_GIF',
       'nsfw_gifs',
+      'NSFW_HTML5',
       'porninfifteenseconds',
       'WatchItForThePlot',
       '60fpsporn',
       'porn_gifs',
       'TittyDrop',
       'GirlsFinishingTheJob',
+    ],
+  },
+  {
+    title: 'Public & Outdoor',
+    subreddits: [
+      'gwpublic',
+      'extramile',
+      'HereInMyCar',
+      'roadhead',
+      'CarSexPorn',
+      'PublicSexPorn',
+      'RealPublicNudity',
+      'FlashingGirls',
+    ],
+  },
+  {
+    title: 'Women & Women',
+    subreddits: [
+      'lesbians',
+      'girlskissing',
+      'dykesgonewild',
+    ],
+  },
+  {
+    title: 'College & Petite',
+    subreddits: [
+      'petite',
+      'PetiteGoneWild',
+      'BustyPetite',
+      'collegesluts',
+      'smallboobs',
+      'fitgirls',
     ],
   },
   {
@@ -268,23 +292,16 @@ export const curatedNsfwMoreSections: TextSubredditSection[] = [
       'milf',
       'Asstastic',
       'BigBoobsGW',
-      'BustyPetite',
-      'PetiteGoneWild',
-      'smallboobs',
-      'fitgirls',
     ],
   },
   {
-    title: 'Outdoor & Public',
+    title: 'RealGirls & Regional',
     subreddits: [
-      'gwpublic',
-      'FlashingGirls',
-      'ChangingRooms',
-      'holdthemoan',
-      'extramile',
-      'CarSexPorn',
-      'PublicSexPorn',
-      'RealPublicNudity',
+      'RealGirls',
+      'AsiansGoneWild',
+      'russiangirls',
+      'gonewild30plus',
+      'gonewildcurvy',
     ],
   },
 ]
@@ -324,14 +341,24 @@ export const landscapeVideoShowcase: LandscapeVideoShowcase[] = [
 
 export const nsfwLandscapeVideoShowcase: LandscapeVideoShowcase[] = [
   {
+    title: 'Sound-on clips',
+    subtitle: 'Landscape audio feed · /r/porn_with_sounds',
+    subreddit: 'porn_with_sounds',
+  },
+  {
     title: 'HTML5 Cinema',
     subtitle: 'Wide adult video · /r/NSFW_HTML5',
     subreddit: 'NSFW_HTML5',
   },
   {
-    title: 'Sound-on clips',
-    subtitle: 'Landscape audio feed · /r/porn_with_sounds',
-    subreddit: 'porn_with_sounds',
+    title: 'NSFW videos',
+    subtitle: 'General adult video · /r/nsfw_videos',
+    subreddit: 'nsfw_videos',
+  },
+  {
+    title: 'Sound on',
+    subtitle: 'Audio-first clips · /r/soundonporn',
+    subreddit: 'soundonporn',
   },
   {
     title: 'JOI videos',
@@ -347,11 +374,6 @@ export const nsfwLandscapeVideoShowcase: LandscapeVideoShowcase[] = [
     title: 'Tube clips',
     subtitle: 'Sound-on video · /r/GoneWildTube',
     subreddit: 'GoneWildTube',
-  },
-  {
-    title: 'Sound on',
-    subtitle: 'Audio-first clips · /r/soundonporn',
-    subreddit: 'soundonporn',
   },
   {
     title: 'Talking clips',
@@ -400,18 +422,18 @@ export const portraitVideoShowcase: LandscapeVideoShowcase[] = [
 
 export const nsfwPortraitVideoShowcase: LandscapeVideoShowcase[] = [
   {
-    title: 'TikTok NSFW',
-    subtitle: 'Vertical adult feed · /r/tiktoknsfw',
-    subreddit: 'tiktoknsfw',
+    title: 'NSFW GIF',
+    subtitle: 'Fast silent loops · /r/NSFW_GIF',
+    subreddit: 'NSFW_GIF',
   },
   {
-    title: 'TikTok Porn',
-    subtitle: 'Short mobile clips · /r/tiktokporn',
-    subreddit: 'tiktokporn',
+    title: 'GIF stream',
+    subtitle: 'Portrait-ready clips · /r/nsfw_gifs',
+    subreddit: 'nsfw_gifs',
   },
   {
     title: 'Hold the Moan',
-    subtitle: 'Quick vertical-ready clips · /r/holdthemoan',
+    subtitle: 'Quick high-quality clips · /r/holdthemoan',
     subreddit: 'holdthemoan',
   },
   {
@@ -425,9 +447,9 @@ export const nsfwPortraitVideoShowcase: LandscapeVideoShowcase[] = [
     subreddit: 'TittyDrop',
   },
   {
-    title: 'Creator Shorts',
-    subtitle: 'Portrait-leaning feed · /r/GirlsFinishingTheJob',
-    subreddit: 'GirlsFinishingTheJob',
+    title: 'Short loops',
+    subtitle: 'No-sound quality lane · /r/porn_gifs',
+    subreddit: 'porn_gifs',
   },
 ]
 

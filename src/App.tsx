@@ -861,10 +861,10 @@ function LandingPage({
       <SectionRow
         hint={
           nsfwEnabled
-            ? 'Open straight into a wide-screen adult autoplay feed.'
+            ? 'Landscape-first adult video, biased toward clips that are more likely to carry audio.'
             : 'Open straight into a wide-screen autoplay feed.'
         }
-        title="Landscape Video"
+        title={nsfwEnabled ? 'Sound-On Wide Video' : 'Landscape Video'}
         variant="showcase-landscape"
       >
         {activeLandscapeShowcase.map((entry) => (
@@ -884,10 +884,10 @@ function LandingPage({
       <SectionRow
         hint={
           nsfwEnabled
-            ? 'Portrait-first adult clips for one-handed mobile browsing.'
+            ? 'Fast, higher-quality GIF and portrait clips where sound matters less than quality.'
             : 'Portrait-first clips for one-handed mobile browsing.'
         }
-        title="Portrait Video"
+        title={nsfwEnabled ? 'GIFs & Quick Clips' : 'Portrait Video'}
         variant="showcase-portrait"
       >
         {activePortraitShowcase.map((entry) => (
@@ -951,9 +951,13 @@ function LandingPage({
 
       {compactDirectorySections.length > 0 ? (
         <TextSubredditDirectory
-          hint="Everything else stays compact here so the homepage feels faster to scan."
+          hint={
+            nsfwEnabled
+              ? 'Long-tail themes stay compact here so the homepage stays focused on amateur, sound-on video, and quality clip discovery.'
+              : 'Everything else stays compact here so the homepage feels faster to scan.'
+          }
           sections={compactDirectorySections}
-          title="More to Explore"
+          title={nsfwEnabled ? 'Browse by Category' : 'More to Explore'}
           onOpenSubreddit={openLandingSubreddit}
         />
       ) : null}
