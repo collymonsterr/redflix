@@ -749,6 +749,7 @@ function LandingPage({
   const compactDirectorySections = nsfwEnabled
     ? [...compactDiscoverySections, ...homepageCuration.nsfwMoreSections]
     : compactDiscoverySections
+  const featuredSectionTitle = nsfwEnabled ? 'Real & Amateur' : 'Start Here'
   const placeholder = nsfwEnabled
     ? 'Open /r/gonewild, /r/NSFW_GIF, /r/RealGirls...'
     : 'Open /r/pics, /r/gifs, /u/example...'
@@ -799,124 +800,101 @@ function LandingPage({
       <header className="landing-topbar">
         <div className="brand-lockup">
           <img className="brand-logo" src="/redflix-logo.png" alt="RedFlix" />
-        </div>
-
-        <div className="nav-actions">
-          {nsfwEnabled ? (
-            <button className="viewer-link feature-link" type="button" onClick={onOpenCinema}>
-              Cinema
-            </button>
-          ) : null}
-          <button className="viewer-link muted" type="button" onClick={onOpenFavorites}>
-            Favorites {favoriteCount}
-          </button>
-          <button
-            className="viewer-link muted"
-            type="button"
-            onClick={onOpenFollowingCreators}
-          >
-            Followed creators {followedCreatorCount}
-          </button>
-          <button
-            className="viewer-link muted"
-            type="button"
-            onClick={onOpenFollowingSubreddits}
-          >
-            Followed subs {followedSubredditCount}
-          </button>
-          <button className="viewer-link muted" type="button" onClick={onOpenPrivacyDialog}>
-            {hasPrivacyLock ? 'Privacy' : 'Set lock'}
-          </button>
-          <button className="viewer-link muted" type="button" onClick={onOpenCurationEditor}>
-            Edit home
-          </button>
+          <p className="landing-mode-badge">{nsfwEnabled ? 'NSFW home' : 'SFW home'}</p>
         </div>
       </header>
 
-      <section className="landing-launch">
-        <form className="search-bar landing-search" onSubmit={handleSubmit}>
-          <input
-            aria-label="Open subreddit or creator"
-            placeholder={placeholder}
-            value={searchValue}
-            onChange={(event) => setSearchValue(event.target.value)}
-          />
-          <button type="submit">Open</button>
-        </form>
+      <section className="landing-hero">
+        <div className="landing-launch">
+          <div className="landing-intro">
+            <p className="landing-kicker">{nsfwEnabled ? 'Adult gallery' : 'Clean gallery'}</p>
+            <h1>{nsfwEnabled ? 'Open a feed or jump straight into a lane.' : 'Open a subreddit, creator, or quick lane.'}</h1>
+          </div>
 
-        <div className="quick-links">
+          <form className="search-bar landing-search" onSubmit={handleSubmit}>
+            <input
+              aria-label="Open subreddit or creator"
+              placeholder={placeholder}
+              value={searchValue}
+              onChange={(event) => setSearchValue(event.target.value)}
+            />
+            <button type="submit">Open</button>
+          </form>
+
+          {quickLinks.length > 0 ? (
+            <div className="landing-chip-block">
+              <span>Popular now</span>
+              <div className="quick-links">
+                {quickLinks.map((name) => (
+                  <button key={name} type="button" onClick={() => openLandingSubreddit(name)}>
+                    /r/{name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {modeSavedSubreddits.length > 0 ? (
+            <div className="landing-chip-block">
+              <span>Saved subs</span>
+              <div className="quick-links">
+                {modeSavedSubreddits.slice(0, 8).map((subreddit) => (
+                  <button
+                    key={`saved-${subreddit}`}
+                    type="button"
+                    onClick={() => openLandingSubreddit(subreddit)}
+                  >
+                    /r/{subreddit}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        <aside className="landing-utility-grid" aria-label="Library shortcuts">
+          <button className="landing-utility-card" type="button" onClick={onOpenFavorites}>
+            <HeartIcon />
+            <strong>{favoriteCount}</strong>
+            <span>Favorites</span>
+          </button>
+          <button
+            className="landing-utility-card"
+            type="button"
+            onClick={onOpenFollowingCreators}
+          >
+            <CreatorIcon />
+            <strong>{followedCreatorCount}</strong>
+            <span>Creators</span>
+          </button>
+          <button
+            className="landing-utility-card"
+            type="button"
+            onClick={onOpenFollowingSubreddits}
+          >
+            <SubredditIcon />
+            <strong>{followedSubredditCount}</strong>
+            <span>Subreddits</span>
+          </button>
+          <button className="landing-utility-card" type="button" onClick={onOpenPrivacyDialog}>
+            <LockIcon />
+            <strong>{hasPrivacyLock ? 'On' : 'Off'}</strong>
+            <span>{hasPrivacyLock ? 'Privacy lock' : 'Set lock'}</span>
+          </button>
           {nsfwEnabled ? (
-            <button className="feature-link" type="button" onClick={onOpenCinema}>
-              Cinema
+            <button className="landing-utility-card landing-utility-card--feature" type="button" onClick={onOpenCinema}>
+              <CinemaIcon />
+              <strong>Wide</strong>
+              <span>Cinema mode</span>
             </button>
           ) : null}
-          {quickLinks.map((name) => (
-            <button key={name} type="button" onClick={() => openLandingSubreddit(name)}>
-              /r/{name}
-            </button>
-          ))}
-        </div>
+          <button className="landing-utility-card" type="button" onClick={onOpenCurationEditor}>
+            <SettingsIcon />
+            <strong>Edit</strong>
+            <span>Homepage</span>
+          </button>
+        </aside>
       </section>
-
-      <SectionRow
-        hint={
-          nsfwEnabled
-            ? 'Landscape-first adult video, biased toward clips that are more likely to carry audio.'
-            : 'Open straight into a wide-screen autoplay feed.'
-        }
-        title={nsfwEnabled ? 'Sound-On Wide Video' : 'Landscape Video'}
-        variant="showcase-landscape"
-      >
-        {activeLandscapeShowcase.map((entry) => (
-          <SubredditTile
-            key={entry.subreddit}
-            nsfwEnabled={nsfwEnabled}
-            previewEnabled
-            previewMediaType="video"
-            previewOrientation="landscape"
-            posterAspect="landscape"
-            subreddit={entry.subreddit}
-            onOpenSubreddit={onOpenLandscapeSubreddit}
-          />
-        ))}
-      </SectionRow>
-
-      <SectionRow
-        hint={
-          nsfwEnabled
-            ? 'Fast, higher-quality GIF and portrait clips where sound matters less than quality.'
-            : 'Portrait-first clips for one-handed mobile browsing.'
-        }
-        title={nsfwEnabled ? 'GIFs & Quick Clips' : 'Portrait Video'}
-        variant="showcase-portrait"
-      >
-        {activePortraitShowcase.map((entry) => (
-          <SubredditTile
-            key={entry.subreddit}
-            nsfwEnabled={nsfwEnabled}
-            previewEnabled
-            previewMediaType="video"
-            previewOrientation="portrait"
-            posterAspect="portrait"
-            subreddit={entry.subreddit}
-            onOpenSubreddit={onOpenPortraitSubreddit}
-          />
-        ))}
-      </SectionRow>
-
-      {modeSavedSubreddits.length > 0 ? (
-        <SectionRow title="Saved">
-          {modeSavedSubreddits.map((subreddit) => (
-            <SubredditTile
-              key={subreddit}
-              nsfwEnabled={nsfwEnabled}
-              previewEnabled
-              subreddit={subreddit}
-              onOpenSubreddit={openLandingSubreddit}
-            />
-          ))}
-        </SectionRow>
-      ) : null}
 
       {modeContinueWatching.length > 0 ? (
         <SectionRow title="Continue">
@@ -934,8 +912,12 @@ function LandingPage({
 
       {primaryDiscoverySection ? (
         <SectionRow
-          hint="A short first pass of high-signal subs, kept to two clean rows before expanding."
-          title={primaryDiscoverySection.title}
+          hint={
+            nsfwEnabled
+              ? 'The amateur-first lane, kept to two clean rows before expanding.'
+              : 'The strongest all-round places to start, kept tight before expanding.'
+          }
+          title={featuredSectionTitle}
         >
           {primaryDiscoverySection.subreddits.map((subreddit) => (
             <SubredditTile
@@ -949,15 +931,63 @@ function LandingPage({
         </SectionRow>
       ) : null}
 
+      <div className="landing-showcase-grid">
+        <SectionRow
+          hint={
+            nsfwEnabled
+              ? 'Landscape-first video with better odds of real audio.'
+              : 'Wider video feeds for desktop and autoplay browsing.'
+          }
+          title="Wide video"
+          variant="showcase-landscape"
+        >
+          {activeLandscapeShowcase.map((entry) => (
+            <SubredditTile
+              key={entry.subreddit}
+              nsfwEnabled={nsfwEnabled}
+              previewEnabled
+              previewMediaType="video"
+              previewOrientation="landscape"
+              posterAspect="landscape"
+              subreddit={entry.subreddit}
+              onOpenSubreddit={onOpenLandscapeSubreddit}
+            />
+          ))}
+        </SectionRow>
+
+        <SectionRow
+          hint={
+            nsfwEnabled
+              ? 'Portrait clips and cleaner no-sound GIF lanes.'
+              : 'Tall mobile-style clips and quick-scroll feeds.'
+          }
+          title="Tall video"
+          variant="showcase-portrait"
+        >
+          {activePortraitShowcase.map((entry) => (
+            <SubredditTile
+              key={entry.subreddit}
+              nsfwEnabled={nsfwEnabled}
+              previewEnabled
+              previewMediaType="video"
+              previewOrientation="portrait"
+              posterAspect="portrait"
+              subreddit={entry.subreddit}
+              onOpenSubreddit={onOpenPortraitSubreddit}
+            />
+          ))}
+        </SectionRow>
+      </div>
+
       {compactDirectorySections.length > 0 ? (
         <TextSubredditDirectory
           hint={
             nsfwEnabled
-              ? 'Long-tail themes stay compact here so the homepage stays focused on amateur, sound-on video, and quality clip discovery.'
-              : 'Everything else stays compact here so the homepage feels faster to scan.'
+              ? 'The long tail stays compact here so the homepage can stay focused on amateur, wide video, and quick clips.'
+              : 'Everything else stays compact here so the homepage stays fast to scan.'
           }
           sections={compactDirectorySections}
-          title={nsfwEnabled ? 'Browse by Category' : 'More to Explore'}
+          title="Explore"
           onOpenSubreddit={openLandingSubreddit}
         />
       ) : null}
@@ -4424,14 +4454,17 @@ function TextSubredditDirectory({
           const isExpanded = expandedSections.includes(section.title)
           const visibleSubreddits = isExpanded
             ? section.subreddits
-            : section.subreddits.slice(0, 8)
+            : section.subreddits.slice(0, 6)
           const hasMore = section.subreddits.length > visibleSubreddits.length
 
           return (
             <div key={section.title} className="text-directory-card">
               <div className="text-directory-card-header">
-                <h3>{section.title}</h3>
-                {section.subreddits.length > 8 ? (
+                <h3>
+                  {section.title}
+                  <span>{section.subreddits.length}</span>
+                </h3>
+                {section.subreddits.length > 6 ? (
                   <button
                     type="button"
                     onClick={() =>
@@ -4442,7 +4475,7 @@ function TextSubredditDirectory({
                       )
                     }
                   >
-                    {isExpanded ? 'Show less' : `Show ${section.subreddits.length - 8} more`}
+                    {isExpanded ? 'Show less' : `Show ${section.subreddits.length - 6} more`}
                   </button>
                 ) : null}
               </div>
@@ -4458,8 +4491,7 @@ function TextSubredditDirectory({
                   </button>
                 ))}
               </div>
-
-              {hasMore ? <p className="text-directory-fade">More hidden</p> : null}
+              {hasMore ? <p className="text-directory-fade">More hidden in this lane</p> : null}
             </div>
           )
         })}

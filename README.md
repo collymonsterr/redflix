@@ -5,6 +5,7 @@ RedFlix is a private Reddit media viewer built for fast browsing of image, GIF, 
 ## Current Highlights
 
 - SFW home at `/` and a separate NSFW home at `/nsfw`
+- Shorter homepage layout with a compact hero, one featured row, and paired wide/tall showcase lanes
 - Viewer, grid, and cinema browsing modes
 - Lean viewer chrome with a single filters/settings surface and a tiered info panel
 - Quality-first browsing with freshness cooldowns to avoid yesterday's repeats
