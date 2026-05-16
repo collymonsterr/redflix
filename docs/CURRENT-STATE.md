@@ -53,6 +53,7 @@ This document is the quickest snapshot of what RedFlix does today.
 - Known video-heavy subreddits can open with a smarter default orientation so TikTok-style feeds bias tall and wide-video feeds bias landscape.
 - Attempted autoplay with sound when moving to the next direct video.
 - Automatic next-item advance now behaves like autoplay rather than a manual skip, which makes end-of-video handoff more reliable.
+- Viewer next/back navigation now guards against stale media events from the previous item, so keyboard arrows and on-screen arrows should advance one item at a time more reliably.
 - Failed clips now stop on an inline error card with `Retry` and `Next` instead of silently skipping through the whole feed.
 - Reddit-hosted videos and some embed-backed posts can now be marked as known-sound or known-silent; fully opaque third-party embeds still fall back to `All` when audio cannot be classified ahead of time.
 - Hover controls in fullscreen for play/pause, mute, and the top viewer dock.
