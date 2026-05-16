@@ -86,6 +86,7 @@ RedFlix currently stores everything in localStorage:
 
 ## Known Caveats
 
+- Viewer next/back navigation is still an active bug area; see [docs/NAVIGATION-BUG-HANDOFF.md](/Users/colly/Documents/New%20project/redditp-next/docs/NAVIGATION-BUG-HANDOFF.md).
 - Some third-party embeds still ignore autoplay or unmuted playback because of browser or provider restrictions.
 - Hosted deployments depend on valid Reddit API credentials.
 - Reddit rate limits can still affect some homepage previews or busy subreddit loads.

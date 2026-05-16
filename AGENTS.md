@@ -32,6 +32,11 @@ RedFlix is a private Reddit media viewer focused on:
 - Quick-exit safe-cover screen with return path
 - Homepage curation editor via `Edit home`
 
+## Current Known Issue
+
+- Viewer next/back navigation is still not fully deterministic in some cases.
+- If you are working on viewer navigation, read [docs/NAVIGATION-BUG-HANDOFF.md](docs/NAVIGATION-BUG-HANDOFF.md) before changing `src/App.tsx`.
+
 ## Deployment Notes
 
 - Frontend is Vite.
@@ -72,6 +77,7 @@ When a change affects product behavior, deployment, operations, routes, storage,
 - update the relevant Markdown files before pushing
 - keep `README.md` accurate
 - keep `docs/CURRENT-STATE.md` accurate for user-visible behavior
+- keep `docs/NAVIGATION-BUG-HANDOFF.md` accurate when the unresolved viewer navigation issue changes materially
 - keep `docs/DEPLOYMENT.md` accurate for hosting and Reddit proxy changes
 - keep `docs/HOMEPAGE-CURATION.md` accurate when homepage editing changes
 
