@@ -2044,6 +2044,7 @@ function ViewerPage({
         setMediaErrorItemKey('')
         setCommentsOpen(false)
         commentRequestIdRef.current += 1
+        currentItemKeyRef.current = nextItemKey
         onSettingsChange((current) =>
           current.muted
             ? {
@@ -2136,18 +2137,19 @@ function ViewerPage({
       setMediaErrorItemKey('')
       setCommentsOpen(false)
       commentRequestIdRef.current += 1
+      currentItemKeyRef.current = filteredItems[index]?.key ?? ''
       onSettingsChange((current) =>
         current.muted
           ? {
-              ...current,
-              muted: false,
+                ...current,
+                muted: false,
             }
           : current,
       )
       setActiveIndex(index)
       updateDisplayMode('viewer')
     },
-    [onSettingsChange, updateDisplayMode],
+    [filteredItems, onSettingsChange, updateDisplayMode],
   )
 
   const handleToggleFullscreen = useCallback(() => {
