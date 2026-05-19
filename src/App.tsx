@@ -825,7 +825,7 @@ function LandingPage({
         </div>
       </header>
 
-      {modeContinueWatching.length > 0 ? (
+      {modeContinueWatching.length >= 4 ? (
         <SectionRow title="Continue">
           {modeContinueWatching.map((session) => (
             <SubredditTile
@@ -897,7 +897,7 @@ function LandingPage({
               key={`${nsfwEnabled ? 'nsfw' : 'sfw'}-${section.title}-${subreddit}`}
               forcedPoster={sessions[toSessionKey(subreddit)]?.posterUrl ?? null}
               nsfwEnabled={nsfwEnabled}
-              posterAspect={isLandscapeDiscoverySection(section.title, nsfwEnabled) ? 'landscape' : 'portrait'}
+              posterAspect={isPortraitDiscoverySection(section.title) ? 'portrait' : 'landscape'}
               previewEnabled
               subreddit={subreddit}
               title={formatHomepageSubredditTitle(subreddit, nsfwEnabled)}
@@ -917,7 +917,7 @@ function LandingPage({
               key={`${nsfwEnabled ? 'nsfw-extra' : 'sfw-extra'}-${section.title}-${subreddit}`}
               forcedPoster={sessions[toSessionKey(subreddit)]?.posterUrl ?? null}
               nsfwEnabled={nsfwEnabled}
-              posterAspect={isLandscapeDiscoverySection(section.title, nsfwEnabled) ? 'landscape' : 'portrait'}
+              posterAspect={isPortraitDiscoverySection(section.title) ? 'portrait' : 'landscape'}
               previewEnabled
               subreddit={subreddit}
               title={formatHomepageSubredditTitle(subreddit, nsfwEnabled)}
@@ -4352,7 +4352,7 @@ function GalleryCard({
 function SubredditTile({
   forcedPoster,
   nsfwEnabled,
-  posterAspect = 'portrait',
+  posterAspect = 'landscape',
   previewEnabled = false,
   previewMediaType = 'any',
   previewOrientation = 'any',
@@ -5220,12 +5220,9 @@ function formatHomepageSubredditTitle(subreddit: string, nsfwEnabled: boolean) {
   return displayMap[subreddit.toLowerCase()] ?? `/r/${subreddit}`
 }
 
-function isLandscapeDiscoverySection(title: string, nsfwEnabled: boolean) {
+function isPortraitDiscoverySection(title: string) {
   const normalized = title.trim().toLowerCase()
-
-  if (normalized.includes('sound-on') || normalized.includes('wide')) return true
-  if (!nsfwEnabled && normalized === 'motion & action') return true
-  return false
+  return /tall|vertical|portrait|tiktok|shorts|reels/.test(normalized)
 }
 
 function buildTileGradient(seed: string) {
