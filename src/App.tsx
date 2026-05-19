@@ -1688,6 +1688,7 @@ function ViewerPage({
   const [items, setItems] = useState<ViewerItem[]>([])
   const [after, setAfter] = useState<string | null>(null)
   const [activeIndex, setActiveIndex] = useState(initialSession?.index ?? 0)
+  const [activeItemKey, setActiveItemKey] = useState('')
   const [isLoading, setIsLoading] = useState(route.kind !== 'favorites')
   const [error, setError] = useState('')
   const [searchValue, setSearchValue] = useState(
@@ -1708,6 +1709,8 @@ function ViewerPage({
   const [soundUnavailableItemKey, setSoundUnavailableItemKey] = useState('')
   const [mediaErrorItemKey, setMediaErrorItemKey] = useState('')
   const [freshnessExemptKeys, setFreshnessExemptKeys] = useState<Record<string, true>>({})
+  const [viewerQueue, setViewerQueue] = useState<ViewerItem[]>([])
+  const [viewerHistory, setViewerHistory] = useState<string[]>([])
   const [commentsOpen, setCommentsOpen] = useState(false)
   const [comments, setComments] = useState<RedditComment[]>([])
   const [commentsStatus, setCommentsStatus] = useState<
@@ -1726,10 +1729,8 @@ function ViewerPage({
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null)
   const lastRecordedItemRef = useRef('')
   const currentItemKeyRef = useRef('')
-  const commentRequestIdRef = useRef(0)
-  const viewerQueueRef = useRef<ViewerItem[]>([])
-  const viewerHistoryRef = useRef<string[]>([])
   const initialSessionIndexRef = useRef(initialSession?.index ?? 0)
+  const commentRequestIdRef = useRef(0)
 
   const favoriteEntries = useMemo(
     () =>
@@ -1766,6 +1767,12 @@ function ViewerPage({
       ? followedSubreddits
       : []
   const hasEmptyFollowingRoute = isFollowingRoute && followedSources.length === 0
+  const viewerRouteIdentity =
+    route.kind === 'subreddit'
+      ? `subreddit:${route.subreddit}`
+      : route.kind === 'author'
+        ? `author:${route.author}`
+        : route.kind
   const effectiveSelectedTag =
     selectedTag === 'all' ||
     favoriteTags.some((tag) => tag.toLowerCase() === selectedTag.toLowerCase())
@@ -1924,39 +1931,26 @@ function ViewerPage({
     filteredItems.every((item) => item.mediaType === filteredItems[0]?.mediaType)
   const useFocusedGrid = isSubredditRoute || isAuthorRoute
 
-  if (!isGridMode && filteredItems.length > 0) {
-    if (viewerQueueRef.current.length === 0) {
-      viewerQueueRef.current = filteredItems
-      if (!currentItemKeyRef.current) {
-        const initIdx = Math.min(activeIndex, filteredItems.length - 1)
-        currentItemKeyRef.current = filteredItems[initIdx]?.key ?? ''
-      }
-    } else {
-      const existingKeys = new Set(viewerQueueRef.current.map((i) => i.key))
-      const newItems = filteredItems.filter((i) => !existingKeys.has(i.key))
-      if (newItems.length > 0) {
-        viewerQueueRef.current = [...viewerQueueRef.current, ...newItems]
-      }
-    }
-  }
-
   const safeIndex =
     filteredItems.length === 0
       ? 0
       : Math.min(activeIndex, filteredItems.length - 1)
 
-  const activeItemByKey = !isGridMode && currentItemKeyRef.current
-    ? viewerQueueRef.current.find((i) => i.key === currentItemKeyRef.current) ??
-      filteredItems.find((i) => i.key === currentItemKeyRef.current)
+  const queueActiveItem = activeItemKey
+    ? viewerQueue.find((item) => item.key === activeItemKey)
     : undefined
-  const activeItem = activeItemByKey ?? filteredItems[safeIndex]
+  const filteredActiveItem = activeItemKey
+    ? filteredItems.find((item) => item.key === activeItemKey)
+    : undefined
+  const activeItem = queueActiveItem ?? filteredActiveItem ?? filteredItems[safeIndex]
   const queueIndex = activeItem
-    ? viewerQueueRef.current.findIndex((i) => i.key === activeItem.key)
+    ? viewerQueue.findIndex((item) => item.key === activeItem.key)
     : -1
+  const visibleItemCount = viewerQueue.length > 0 ? viewerQueue.length : filteredItems.length
+  const displayIndex = queueIndex >= 0 ? queueIndex : safeIndex
   const nextItem =
-    (queueIndex >= 0
-      ? viewerQueueRef.current[queueIndex + 1]
-      : undefined) ?? filteredItems[safeIndex + 1]
+    (queueIndex >= 0 ? viewerQueue[queueIndex + 1] : undefined) ??
+    filteredItems[safeIndex + 1]
   const activeDisplayTitle = activeItem ? formatStageTitle(activeItem.title) : ''
   const isSoundBlocked = Boolean(activeItem && soundBlockedItemKey === activeItem.key)
   const isKnownSilent = activeItem?.audioSupport === 'silent'
@@ -2048,8 +2042,8 @@ function ViewerPage({
 
   const moveBy = useCallback(
     (direction: 1 | -1, options?: { userInitiated?: boolean }) => {
-      const queue = viewerQueueRef.current
-      if (queue.length === 0 && filteredItems.length === 0) return
+      const effectiveQueue = viewerQueue.length > 0 ? viewerQueue : filteredItems
+      if (effectiveQueue.length === 0) return
 
       const now = Date.now()
       if (now < navigationLockUntilRef.current) {
@@ -2057,40 +2051,45 @@ function ViewerPage({
       }
 
       navigationLockUntilRef.current = now + (options?.userInitiated ? 360 : 220)
-
-      const effectiveQueue = queue.length > 0 ? queue : filteredItems
-      const currentKey = currentItemKeyRef.current
-      let nextItemKey: string
-
-      if (direction === 1) {
-        const currentIdx = effectiveQueue.findIndex((i) => i.key === currentKey)
-        const safeCurrentIdx = currentIdx >= 0 ? currentIdx : 0
-        const nextIdx = safeCurrentIdx + 1 >= effectiveQueue.length ? 0 : safeCurrentIdx + 1
-        nextItemKey = effectiveQueue[nextIdx]?.key ?? ''
-        if (currentKey) {
-          viewerHistoryRef.current = [...viewerHistoryRef.current, currentKey]
-        }
-      } else {
-        const history = viewerHistoryRef.current
-        if (history.length > 0) {
-          nextItemKey = history[history.length - 1]
-          viewerHistoryRef.current = history.slice(0, -1)
-        } else {
-          const currentIdx = effectiveQueue.findIndex((i) => i.key === currentKey)
-          const safeCurrentIdx = currentIdx >= 0 ? currentIdx : 0
-          const prevIdx = safeCurrentIdx - 1 < 0 ? effectiveQueue.length - 1 : safeCurrentIdx - 1
-          nextItemKey = effectiveQueue[prevIdx]?.key ?? ''
-        }
-      }
+      const currentKey =
+        activeItemKey ||
+        activeItem?.key ||
+        effectiveQueue[Math.min(activeIndex, effectiveQueue.length - 1)]?.key ||
+        ''
+      const currentQueueIndex = currentKey
+        ? effectiveQueue.findIndex((item) => item.key === currentKey)
+        : -1
+      const normalizedIndex =
+        currentQueueIndex >= 0
+          ? currentQueueIndex
+          : Math.min(activeIndex, effectiveQueue.length - 1)
+      const usingHistory = direction === -1 && viewerHistory.length > 0
+      const loopedIndex =
+        normalizedIndex + direction < 0
+          ? effectiveQueue.length - 1
+          : normalizedIndex + direction >= effectiveQueue.length
+            ? 0
+            : normalizedIndex + direction
+      const nextItemKey = usingHistory
+        ? viewerHistory[viewerHistory.length - 1] ?? ''
+        : effectiveQueue[loopedIndex]?.key ?? ''
+      const nextFilteredIndex = filteredItems.findIndex((item) => item.key === nextItemKey)
 
       const advance = () => {
         revealChrome()
         setProgress(0)
+        setIsPaused(false)
         setSoundBlockedItemKey('')
         setMediaErrorItemKey('')
         setCommentsOpen(false)
         commentRequestIdRef.current += 1
         currentItemKeyRef.current = nextItemKey
+        setActiveItemKey(nextItemKey)
+        if (usingHistory) {
+          setViewerHistory((current) => current.slice(0, -1))
+        } else if (direction === 1 && currentKey) {
+          setViewerHistory((current) => [...current, currentKey])
+        }
         onSettingsChange((current) =>
           current.muted
             ? {
@@ -2099,10 +2098,7 @@ function ViewerPage({
               }
             : current,
         )
-        setActiveIndex(() => {
-          const idx = viewerQueueRef.current.findIndex((i) => i.key === nextItemKey)
-          return idx >= 0 ? idx : 0
-        })
+        setActiveIndex(nextFilteredIndex >= 0 ? nextFilteredIndex : 0)
       }
 
       if (options?.userInitiated) {
@@ -2143,11 +2139,16 @@ function ViewerPage({
       advance()
     },
     [
+      activeIndex,
+      activeItem?.key,
+      activeItemKey,
       filteredItems,
       onSettingsChange,
       revealChrome,
       settings.volume,
       tryStartSeparateAudio,
+      viewerHistory,
+      viewerQueue,
     ],
   )
 
@@ -2160,8 +2161,10 @@ function ViewerPage({
       }
 
       if (nextMode === 'grid') {
-        viewerQueueRef.current = []
-        viewerHistoryRef.current = []
+        setViewerQueue([])
+        setViewerHistory([])
+        setActiveItemKey('')
+        currentItemKeyRef.current = ''
       }
 
       onSettingsChange((current) => ({
@@ -2178,15 +2181,16 @@ function ViewerPage({
 
   const openGridItem = useCallback(
     (index: number) => {
-      viewerQueueRef.current = []
-      viewerHistoryRef.current = []
       gridScrollTopRef.current = window.scrollY
       setIsPaused(false)
       setSoundBlockedItemKey('')
       setMediaErrorItemKey('')
       setCommentsOpen(false)
+      setViewerQueue(filteredItems)
+      setViewerHistory([])
       commentRequestIdRef.current += 1
       currentItemKeyRef.current = filteredItems[index]?.key ?? ''
+      setActiveItemKey(filteredItems[index]?.key ?? '')
       onSettingsChange((current) =>
         current.muted
           ? {
@@ -2378,6 +2382,10 @@ function ViewerPage({
   )
 
   useEffect(() => {
+    initialSessionIndexRef.current = initialSession?.index ?? 0
+  }, [initialSession?.index, viewerRouteIdentity])
+
+  useEffect(() => {
     let ignore = false
 
     if (route.kind === 'favorites') {
@@ -2401,14 +2409,19 @@ function ViewerPage({
       setIsLoading(true)
       setError('')
       setAfter(null)
+      setViewerQueue([])
+      setViewerHistory([])
+      setActiveItemKey('')
+      currentItemKeyRef.current = ''
     }, 0)
 
     fetchRoutePage(null)
       .then((page) => {
         if (ignore) return
         setFreshnessExemptKeys({})
-        viewerQueueRef.current = []
-        viewerHistoryRef.current = []
+        setViewerQueue([])
+        setViewerHistory([])
+        setActiveItemKey('')
         currentItemKeyRef.current = ''
         setActiveIndex(initialSessionIndexRef.current)
         setProgress(0)
@@ -2431,13 +2444,84 @@ function ViewerPage({
       ignore = true
       window.clearTimeout(loadingTimeoutId)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchRoutePage, route.kind])
+
+  useEffect(() => {
+    if (isGridMode) return
+
+    const timeoutId = window.setTimeout(() => {
+      setViewerQueue([])
+      setViewerHistory([])
+      setActiveItemKey('')
+      currentItemKeyRef.current = ''
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [
+    effectiveSelectedTag,
+    isGridMode,
+    nsfwEnabled,
+    viewerRouteIdentity,
+    settings.freshnessWindowDays,
+    settings.hideSeen,
+    settings.maxDuration,
+    settings.mediaFilter,
+    settings.orientationFilter,
+    settings.soundFilter,
+  ])
+
+  useEffect(() => {
+    if (isGridMode || filteredItems.length === 0) return
+
+    const timeoutId = window.setTimeout(() => {
+      setViewerQueue((current) => {
+        if (current.length === 0) {
+          return filteredItems
+        }
+
+        const existingKeys = new Set(current.map((item) => item.key))
+        const newItems = filteredItems.filter((item) => !existingKeys.has(item.key))
+        return newItems.length > 0 ? [...current, ...newItems] : current
+      })
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [filteredItems, isGridMode])
+
+  useEffect(() => {
+    if (isGridMode || filteredItems.length === 0) return
+
+    const timeoutId = window.setTimeout(() => {
+      setActiveItemKey((current) => {
+        if (current) return current
+        const initialIndex = Math.min(activeIndex, filteredItems.length - 1)
+        return filteredItems[initialIndex]?.key ?? ''
+      })
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [activeIndex, filteredItems, isGridMode])
 
   useEffect(() => {
     warmMediaAsset(nextItem)
   }, [nextItem])
 
+  useEffect(() => {
+    currentItemKeyRef.current = activeItemKey
+  }, [activeItemKey])
+
+  useEffect(() => {
+    if (!activeItemKey) return
+
+    const nextIndex = filteredItems.findIndex((item) => item.key === activeItemKey)
+    if (nextIndex >= 0 && nextIndex !== activeIndex) {
+      const timeoutId = window.setTimeout(() => {
+        setActiveIndex(nextIndex)
+      }, 0)
+
+      return () => window.clearTimeout(timeoutId)
+    }
+  }, [activeIndex, activeItemKey, filteredItems])
 
   useEffect(() => {
     if (
@@ -2547,9 +2631,7 @@ function ViewerPage({
       return
     }
 
-    const effectiveIdx = queueIndex >= 0 ? queueIndex : safeIndex
-    const effectiveLen = viewerQueueRef.current.length || filteredItems.length
-    if (effectiveIdx < effectiveLen - 4) {
+    if (displayIndex < visibleItemCount - 4) {
       return
     }
 
@@ -2578,13 +2660,13 @@ function ViewerPage({
     }
   }, [
     after,
+    displayIndex,
     fetchRoutePage,
     filteredItems.length,
     isFavoritesRoute,
     isGridMode,
     isLoading,
-    queueIndex,
-    safeIndex,
+    visibleItemCount,
   ])
 
   useEffect(() => {
@@ -2890,7 +2972,7 @@ function ViewerPage({
     if (route.kind === 'subreddit') {
       onSessionUpdate(route.subreddit, {
         subreddit: route.subreddit,
-        index: queueIndex >= 0 ? queueIndex : safeIndex,
+        index: displayIndex,
         title: buildSessionTitle(activeItem),
         posterUrl: activeItem.posterUrl,
         updatedAt: Date.now(),
@@ -3649,7 +3731,7 @@ function ViewerPage({
                   <div className="stage-footer-title-wrap">
                     <h3 title={activeItem.title}>{activeDisplayTitle}</h3>
                     <p className="meta-copy">
-                      <span>{(queueIndex >= 0 ? queueIndex : safeIndex) + 1}/{viewerQueueRef.current.length || filteredItems.length}</span>
+                      <span>{displayIndex + 1}/{visibleItemCount}</span>
                       <span>u/{activeItem.author}</span>
                       <span>/r/{activeItem.subreddit}</span>
                       <span>{formatCompactCount(activeItem.score)} upvotes</span>

@@ -1,123 +1,71 @@
-# Viewer Navigation Bug Handoff
+# Viewer Navigation Fix Notes
 
-This file is the focused handoff for the unresolved viewer navigation bug in RedFlix.
+This file used to be the handoff for RedFlix's unstable viewer navigation bug. The bug is now fixed on `main`, and this document exists to explain the final approach so future agents do not accidentally reintroduce it.
 
-## Current Problem
+## Bug Summary
 
-In `Viewer` mode, next/back navigation is still unstable.
+The old viewer used a numeric `activeIndex` over `filteredItems`.
 
-Observed behavior:
+That broke down because `filteredItems` is not stable while browsing. It can change because of:
 
-- pressing `Right Arrow` once can effectively skip multiple items
-- pressing `Left Arrow` after moving forward does not reliably return through the same items
-- going forward 5 items and then back 5 items can show a completely different sequence
-- the issue can affect keyboard navigation and can also show up through media auto-advance interactions
+- seen/freshness updates
+- pagination appending more results
+- filter changes
+- route/session restoration
 
-## Repo / Main File
+The result was:
 
-- repo root: `/Users/colly/Documents/New project/redditp-next`
-- main file: [src/App.tsx](/Users/colly/Documents/New%20project/redditp-next/src/App.tsx)
+- one `Right Arrow` press could jump multiple items
+- `Left Arrow` did not reliably retrace the path the user just took
+- going forward 5 items and back 5 items could show a different sequence
+- stale `ended` / media-error events could amplify the drift
 
-## Repro
+## Final Fix
 
-Use any active subreddit in `Viewer` mode, ideally one with mixed media or videos.
+The viewer now has three layers of navigation state in [src/App.tsx](/Users/colly/Documents/New%20project/redditp-next/src/App.tsx):
 
-Basic repro:
+1. `activeItemKey`
+   The active viewer item is tracked by stable item key, not only by index.
 
-1. open a subreddit in `Viewer`
-2. press `Right Arrow` 5 times, one press at a time
-3. press `Left Arrow` 5 times
-4. expected: you should retrace the exact same 5 items in reverse
-5. actual: the sequence can drift, skip, or land on different items
+2. `viewerQueue`
+   The viewer keeps an append-only queue snapshot of the items available for the current browsing scope.
 
-## Why This Looks Harder Than A Small Bug
+3. `viewerHistory`
+   Back navigation uses an explicit history stack of previously visited item keys instead of just `currentIndex - 1`.
 
-This does not behave like a simple keyboard repeat problem anymore.
+## Key Behavior
 
-The likely deeper issue is that the viewer still uses a numeric `activeIndex` over a filtered array that is not stable while browsing.
+- Forward navigation walks `viewerQueue`.
+- Back navigation pops from `viewerHistory`.
+- `activeIndex` still exists, but it is now secondary and mainly used for grid/highlight/session compatibility.
+- Viewer queue state is reset when the browsing scope materially changes, such as route/filter/freshness changes.
+- Freshness/seen updates no longer change the meaning of “previous item” mid-session.
 
-That array can change because of:
+## Supporting Fixes
 
-- freshness / seen-state updates
-- pagination / merged pages
-- filter recalculation
-- route/session persistence interactions
+Two related bugs were also part of the original instability:
 
-So:
+- the route fetch flow could effectively rebuild viewer state too aggressively
+- stale media events from old video instances could still try to advance the current viewer item
 
-- index `N` may no longer point to the same item a moment later
-- “back” is not true history, it is just “previous index in the current filtered array”
-- stale media events may amplify the problem, but they are probably not the full root cause
+Those were already partly guarded before this fix, and the stable queue/history model now gives those guards a deterministic item target.
 
-## Areas Already Investigated
+## Regression Checklist
 
-Relevant areas in [src/App.tsx](/Users/colly/Documents/New%20project/redditp-next/src/App.tsx):
+If you touch viewer navigation, verify all of these:
 
-- `filteredItems`
-- `filteredItemsIgnoringFreshness`
-- `safeIndex`
-- `moveBy(...)`
-- `handleMediaVisible(...)`
-- `setFreshnessExemptKeys(...)`
-- `onMarkSeen(...)`
-- `StageMedia`
-- `onEnded={onAdvance}`
-- `handleStageAdvance(...)`
-- `handleMediaError(...)`
+1. One `Right Arrow` press advances exactly one item.
+2. One `Left Arrow` press goes back exactly one item.
+3. Going forward 5 items and back 5 items retraces the same 5 items in reverse.
+4. On-screen arrows and keyboard arrows behave the same.
+5. Video auto-advance only moves one item.
+6. Freshness/seen changes do not reshuffle the active session path while browsing.
 
-## Fixes Already Tried
+## Important Constraint
 
-Several defensive fixes have already been attempted:
+Do not revert the viewer back to “index-only” navigation unless the whole browsing state model is redesigned.
 
-1. ignore repeated arrow-key `keydown` events
-2. short navigation locks / debouncing around `moveBy(...)`
-3. guard `onEnded` / `onError` so stale media events from a previous item should not affect the current one
-4. move that guard earlier so it flips as navigation starts
-5. exempt currently viewed items from freshness filtering so they do not disappear mid-session
+If this area needs more work, preserve the core rule:
 
-Recent related commits:
-
-- `bc99504` `Simplify homepage lanes and stabilize viewer advance`
-- `24a3dc2` `Tighten viewer navigation event guard`
-- `79f8815` `Document viewer navigation guard`
-
-These helped narrow the issue, but they did **not** solve it.
-
-## Fix Applied
-
-The root causes were identified and fixed:
-
-### Root Cause 1: Fetch effect re-ran on every navigation
-
-The fetch effect depended on `initialSession?.index`. Every navigation triggered `handleMediaVisible` → `onSessionUpdate` → parent `sessions` state change → new `initialSession` prop → `initialSession?.index` changed → fetch effect re-ran → **cleared the viewer queue and history on every single navigation action**.
-
-Fix: captured `initialSession?.index` in a ref at mount time (`initialSessionIndexRef`) and removed it from the fetch effect dependency array.
-
-### Root Cause 2: Sync effect overwrote the key ref
-
-A `useEffect` synced `currentItemKeyRef.current = activeItem?.key` on every `activeItem` change. This created a circular dependency: `moveBy` set the key ref → queue instability caused key lookup to fail → `activeItem` fell back to `filteredItems[safeIndex]` (wrong item) → sync effect overwrote the key ref with the wrong key.
-
-Fix: removed the sync effect entirely. `currentItemKeyRef` is now only written by `moveBy` (on navigation), queue initialization (on first load), `openGridItem`, and the fetch effect (route changes).
-
-### Root Cause 3: No stable browsing list
-
-Navigation used `filteredItems` directly, which mutated during browsing as items were marked seen and freshness-filtered. Index N could point to a different item after each navigation.
-
-Fix: added `viewerQueueRef` (stable, append-only snapshot of items) and `viewerHistoryRef` (explicit stack of visited item keys). Forward navigation walks the queue; back navigation pops from the history stack.
-
-### Changes in `src/App.tsx`
-
-- Added `viewerQueueRef`, `viewerHistoryRef`, `initialSessionIndexRef` refs
-- Queue population runs during render: snapshots `filteredItems` on first load, append-only after that
-- `activeItem` derived by key lookup in queue first, then `filteredItems`, with `filteredItems[safeIndex]` as final fallback
-- `moveBy` uses queue for forward navigation, history stack for back navigation
-- Removed `initialSession?.index` from fetch effect deps
-- Removed sync effect that overwrote `currentItemKeyRef`
-
-## Suggested Success Criteria
-
-- one `Right Arrow` press advances exactly one item ✅
-- one `Left Arrow` press goes back exactly one previously visited item ✅
-- going forward 5 times and back 5 times retraces the same sequence in reverse ✅
-- on-screen arrows and keyboard arrows behave the same
-- video end auto-advance moves one item only
+- active viewer identity must be stable by item key
+- back navigation must be explicit history, not just previous filtered index

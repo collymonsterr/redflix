@@ -42,7 +42,8 @@ This document is the quickest snapshot of what RedFlix does today.
 - Freshness filtering is built around local seen timestamps with `All`, `Today`, `3d`, and `7d` windows.
 - The viewer defaults to a `3d` freshness cooldown so returning visits stay fresher without abandoning quality-first sorting.
 - When the current page is too stale, the viewer can pull deeper Reddit pages automatically to top up fresh results.
-- Freshness filtering no longer ejects items you already stepped through in the current viewer session, so next/back navigation stays stable while you browse.
+- Freshness filtering no longer ejects items you already stepped through in the current viewer session.
+- Viewer next/back navigation now runs on a stable queue plus explicit history stack, so going backward retraces the items you actually visited instead of whatever happens to be at the previous filtered index.
 - The top dock is now intentionally lean: `Home`, source, search, `Viewer / Grid`, `Filters`, and `Info`.
 - Quick `All / Wide / Tall` switching now lives inside the expanded filters panel instead of the main dock.
 - Reddit-style ranking controls such as `Hot`, `Top day`, `Top week`, `Top month`, and `Top all` live in the expanded filters panel.
@@ -53,7 +54,7 @@ This document is the quickest snapshot of what RedFlix does today.
 - Known video-heavy subreddits can open with a smarter default orientation so TikTok-style feeds bias tall and wide-video feeds bias landscape.
 - Attempted autoplay with sound when moving to the next direct video.
 - Automatic next-item advance now behaves like autoplay rather than a manual skip, which makes end-of-video handoff more reliable.
-- Viewer next/back navigation now guards against stale media events from the previous item, so keyboard arrows and on-screen arrows should advance one item at a time more reliably.
+- Viewer next/back navigation still guards against stale media events from the previous item, but the core stability now comes from item-key navigation rather than mutable filtered indexes.
 - Failed clips now stop on an inline error card with `Retry` and `Next` instead of silently skipping through the whole feed.
 - Reddit-hosted videos and some embed-backed posts can now be marked as known-sound or known-silent; fully opaque third-party embeds still fall back to `All` when audio cannot be classified ahead of time.
 - Hover controls in fullscreen for play/pause, mute, and the top viewer dock.
@@ -86,7 +87,7 @@ RedFlix currently stores everything in localStorage:
 
 ## Known Caveats
 
-- Viewer next/back navigation is still an active bug area; see [docs/NAVIGATION-BUG-HANDOFF.md](/Users/colly/Documents/New%20project/redditp-next/docs/NAVIGATION-BUG-HANDOFF.md).
+- Viewer navigation now depends on the stable queue/history approach documented in [docs/NAVIGATION-BUG-HANDOFF.md](/Users/colly/Documents/New%20project/redditp-next/docs/NAVIGATION-BUG-HANDOFF.md). If this area regresses, start there before layering more timing guards onto `activeIndex`.
 - Some third-party embeds still ignore autoplay or unmuted playback because of browser or provider restrictions.
 - Hosted deployments depend on valid Reddit API credentials.
 - Reddit rate limits can still affect some homepage previews or busy subreddit loads.

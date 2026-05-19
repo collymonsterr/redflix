@@ -10,4 +10,4 @@ That file is the source of truth for:
 - local state assumptions
 - documentation update requirements before push
 
-If you are working on viewer next/back behavior, also read [docs/NAVIGATION-BUG-HANDOFF.md](docs/NAVIGATION-BUG-HANDOFF.md).
+If you are working on viewer next/back behavior, also read [docs/NAVIGATION-BUG-HANDOFF.md](docs/NAVIGATION-BUG-HANDOFF.md) for the current stable queue/history model before changing `src/App.tsx`.

@@ -9,6 +9,7 @@ RedFlix is a private Reddit media viewer built for fast browsing of image, GIF, 
 - Viewer, grid, and cinema browsing modes
 - Lean viewer chrome with a single filters/settings surface and a tiered info panel
 - Quality-first browsing with freshness cooldowns to avoid yesterday's repeats
+- Stable next/back viewer navigation that now retraces the items you actually visited
 - Sound-aware video browsing with `Sound` and `Silent` filters where RedFlix can classify audio
 - Creator browsing supports both Reddit `/u/...` and `/user/...` links
 - Favorites, followed creators, and followed subreddits
@@ -60,6 +61,6 @@ The Reddit listing proxy lives at `api/reddit/listing.ts` and uses shared logic 
 
 - [Agent guidance](AGENTS.md)
 - [Current app state](docs/CURRENT-STATE.md)
-- [Viewer navigation handoff](docs/NAVIGATION-BUG-HANDOFF.md)
+- [Viewer navigation fix notes](docs/NAVIGATION-BUG-HANDOFF.md)
 - [Deployment and troubleshooting](docs/DEPLOYMENT.md)
 - [Homepage curation editor](docs/HOMEPAGE-CURATION.md)
