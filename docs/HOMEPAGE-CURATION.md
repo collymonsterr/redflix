@@ -31,6 +31,7 @@ Each mode has its own set of editable content.
 For each section you can:
 
 - change the section title
+- choose `Landscape` or `Portrait` tile shape for that row
 - add or remove subreddit names
 - reorder sections with `Up` and `Down`
 - remove entire sections
@@ -81,8 +82,8 @@ That means:
 
 - Keep section names short so the homepage stays clean.
 - Use showcase rows for subs that are reliably video-heavy, and keep landscape and portrait choices intentional.
-- On the NSFW home, the best pattern is usually: amateur/photo discovery first, sound-on wide video second, and GIF or quick-clip rows third.
+- On the NSFW home, the best pattern is usually: amateur video first, quick clips second, then gallery-style discovery rows.
 - The homepage now presents categories as single horizontal lanes, so each section should feel like a tight, intentional row rather than a giant catch-all bucket.
-- Discovery rows now default to landscape tiles unless the section title clearly signals tall content such as `Tall`, `Vertical`, `TikTok`, `Shorts`, or `Reels`.
+- Discovery rows can now be set explicitly to `Landscape` or `Portrait` in the editor.
 - The `Continue` lane is intentionally suppressed until there are at least 4 saved sessions, so small amounts of history do not create a weak top row.
 - If a subreddit preview looks stale after major curation changes, a refresh is usually enough.

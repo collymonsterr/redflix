@@ -17,13 +17,14 @@ This document is the quickest snapshot of what RedFlix does today.
 
 - SFW and NSFW home are intentionally separated.
 - The SFW homepage keeps NSFW access low-profile: the adult switch lives in the footer instead of the top bar.
-- The NSFW homepage now leads with an amateur-first photo row, then separates sound-on wide video from higher-quality GIF and quick-clip discovery.
+- Both homepages are now video-first: `Wide video` and `Tall video` showcase lanes appear before saved/history rows and the broader category lanes.
+- The NSFW homepage now leads with an amateur-first video lane, followed by quick clips, then the broader gallery-style categories.
 - The homepage now uses a much lighter top bar: logo, search, and a few small utility actions only.
 - Main discovery now happens through horizontal category lanes instead of stacked dashboard blocks.
 - Each homepage category is a single sideways-scrolling row of subreddit cards.
 - `Continue`, `Saved subs`, `Wide video`, and `Tall video` can all appear as their own lanes before the broader category rows.
 - `Continue` is now hidden unless there are at least 4 saved sessions, which keeps the home page cleaner when history is sparse.
-- Homepage tiles now default to landscape across most rows, and only clearly tall/vertical/TikTok-style sections switch to portrait cards.
+- Homepage rows now carry explicit tile-shape metadata, so landscape/portrait is controlled per row instead of guessed from the section title.
 - Wide-video and tall-video lanes stay separate so portrait and landscape discovery do not fight each other.
 - The SFW homepage uses cleaned display labels for Reddit’s older `...Porn`-style safe-for-work subreddit names so the home view stays more presentable.
 - On the NSFW homepage, the regular subreddit links now open straight into viewer mode rather than dropping into grid first.

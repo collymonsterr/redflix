@@ -21,6 +21,7 @@ import {
   type HomepageCurationConfig,
   type LandscapeVideoShowcase,
   type TextSubredditSection,
+  type TileAspect,
 } from './data/curated'
 import {
   applyEmbedPlaybackPreferences,
@@ -743,12 +744,7 @@ function LandingPage({
   const activePortraitShowcase = nsfwEnabled
     ? homepageCuration.nsfwPortraitShowcase
     : homepageCuration.sfwPortraitShowcase
-  const homepageSections = nsfwEnabled
-    ? discoverySections.filter(
-        (section) =>
-          section.title !== 'Sound-On Video' && section.title !== 'GIFs & Quick Clips',
-      )
-    : discoverySections
+  const homepageSections = discoverySections
   const additionalHomepageSections = nsfwEnabled
     ? homepageCuration.nsfwMoreSections.filter(
         (section) =>
@@ -825,36 +821,6 @@ function LandingPage({
         </div>
       </header>
 
-      {modeContinueWatching.length >= 4 ? (
-        <SectionRow title="Continue">
-          {modeContinueWatching.map((session) => (
-            <SubredditTile
-              key={`continue-${session.subreddit}`}
-              forcedPoster={session.posterUrl}
-              nsfwEnabled={nsfwEnabled}
-              subreddit={session.subreddit}
-              title={formatHomepageSubredditTitle(session.subreddit, nsfwEnabled)}
-              onOpenSubreddit={openLandingSubreddit}
-            />
-          ))}
-        </SectionRow>
-      ) : null}
-
-      {modeSavedSubreddits.length > 0 ? (
-        <SectionRow title="Saved subs">
-          {modeSavedSubreddits.map((subreddit) => (
-            <SubredditTile
-              key={`saved-${subreddit}`}
-              nsfwEnabled={nsfwEnabled}
-              previewEnabled
-              subreddit={subreddit}
-              title={formatHomepageSubredditTitle(subreddit, nsfwEnabled)}
-              onOpenSubreddit={openLandingSubreddit}
-            />
-          ))}
-        </SectionRow>
-      ) : null}
-
       <SectionRow title="Wide video" variant="showcase-landscape">
         {activeLandscapeShowcase.map((entry) => (
           <SubredditTile
@@ -887,6 +853,36 @@ function LandingPage({
         ))}
       </SectionRow>
 
+      {modeSavedSubreddits.length > 0 ? (
+        <SectionRow title="Saved subs">
+          {modeSavedSubreddits.map((subreddit) => (
+            <SubredditTile
+              key={`saved-${subreddit}`}
+              nsfwEnabled={nsfwEnabled}
+              previewEnabled
+              subreddit={subreddit}
+              title={formatHomepageSubredditTitle(subreddit, nsfwEnabled)}
+              onOpenSubreddit={openLandingSubreddit}
+            />
+          ))}
+        </SectionRow>
+      ) : null}
+
+      {modeContinueWatching.length >= 4 ? (
+        <SectionRow title="Continue">
+          {modeContinueWatching.map((session) => (
+            <SubredditTile
+              key={`continue-${session.subreddit}`}
+              forcedPoster={session.posterUrl}
+              nsfwEnabled={nsfwEnabled}
+              subreddit={session.subreddit}
+              title={formatHomepageSubredditTitle(session.subreddit, nsfwEnabled)}
+              onOpenSubreddit={openLandingSubreddit}
+            />
+          ))}
+        </SectionRow>
+      ) : null}
+
       {homepageSections.map((section) => (
         <SectionRow
           key={`${nsfwEnabled ? 'nsfw' : 'sfw'}-${section.title}`}
@@ -897,7 +893,7 @@ function LandingPage({
               key={`${nsfwEnabled ? 'nsfw' : 'sfw'}-${section.title}-${subreddit}`}
               forcedPoster={sessions[toSessionKey(subreddit)]?.posterUrl ?? null}
               nsfwEnabled={nsfwEnabled}
-              posterAspect={isPortraitDiscoverySection(section.title) ? 'portrait' : 'landscape'}
+              posterAspect={section.tileAspect ?? 'landscape'}
               previewEnabled
               subreddit={subreddit}
               title={formatHomepageSubredditTitle(subreddit, nsfwEnabled)}
@@ -917,7 +913,7 @@ function LandingPage({
               key={`${nsfwEnabled ? 'nsfw-extra' : 'sfw-extra'}-${section.title}-${subreddit}`}
               forcedPoster={sessions[toSessionKey(subreddit)]?.posterUrl ?? null}
               nsfwEnabled={nsfwEnabled}
-              posterAspect={isPortraitDiscoverySection(section.title) ? 'portrait' : 'landscape'}
+              posterAspect={section.tileAspect ?? 'landscape'}
               previewEnabled
               subreddit={subreddit}
               title={formatHomepageSubredditTitle(subreddit, nsfwEnabled)}
@@ -1348,15 +1344,22 @@ function SectionCollectionEditor({
   onChange,
 }: {
   description: string
-  sections: Array<{ title: string; subreddits: string[] }>
+  sections: Array<{ title: string; subreddits: string[]; tileAspect?: TileAspect }>
   title: string
-  onChange: (sections: Array<{ title: string; subreddits: string[] }>) => void
+  onChange: (
+    sections: Array<{ title: string; subreddits: string[]; tileAspect?: TileAspect }>,
+  ) => void
 }) {
   const updateSection = (
     index: number,
-    updater: (section: { title: string; subreddits: string[] }) => {
+    updater: (section: {
       title: string
       subreddits: string[]
+      tileAspect?: TileAspect
+    }) => {
+      title: string
+      subreddits: string[]
+      tileAspect?: TileAspect
     },
   ) => {
     onChange(
@@ -1389,6 +1392,21 @@ function SectionCollectionEditor({
                     }))
                   }
                 />
+              </label>
+              <label className="field-stack">
+                <span>Tile shape</span>
+                <select
+                  value={section.tileAspect ?? 'landscape'}
+                  onChange={(event) =>
+                    updateSection(index, (current) => ({
+                      ...current,
+                      tileAspect: event.target.value as TileAspect,
+                    }))
+                  }
+                >
+                  <option value="landscape">Landscape</option>
+                  <option value="portrait">Portrait</option>
+                </select>
               </label>
               <div className="curation-button-row">
                 <button
@@ -1443,6 +1461,7 @@ function SectionCollectionEditor({
             {
               title: 'New section',
               subreddits: [],
+              tileAspect: 'landscape',
             },
           ])
         }
@@ -4925,6 +4944,7 @@ function cloneSectionCollection(
   return sections.map((section) => ({
     ...section,
     subreddits: [...section.subreddits],
+    tileAspect: section.tileAspect ?? 'landscape',
   }))
 }
 
@@ -4954,14 +4974,13 @@ function cloneHomepageCurationConfig(
 function normalizeSectionDraft(
   value: unknown,
   fallback: CuratedSection[] | TextSubredditSection[],
-) {
+): CuratedSection[] {
   if (!Array.isArray(value)) {
     return cloneSectionCollection(fallback)
   }
 
-  const normalized = value
-    .map((entry) => {
-      if (!entry || typeof entry !== 'object') return null
+  const normalized = value.reduce<CuratedSection[]>((sections, entry) => {
+      if (!entry || typeof entry !== 'object') return sections
 
       const title =
         typeof (entry as { title?: unknown }).title === 'string'
@@ -4974,14 +4993,21 @@ function normalizeSectionDraft(
         .map((item) => (typeof item === 'string' ? normalizeSubredditInput(item) : ''))
         .filter(Boolean)
 
-      return title || subreddits.length > 0
-        ? {
-            title: title || 'Untitled section',
-            subreddits,
-          }
-        : null
-    })
-    .filter((entry): entry is CuratedSection => Boolean(entry))
+      if (!(title || subreddits.length > 0)) {
+        return sections
+      }
+
+      sections.push({
+        title: title || 'Untitled section',
+        subreddits,
+        tileAspect:
+          (entry as { tileAspect?: unknown }).tileAspect === 'portrait'
+            ? 'portrait'
+            : 'landscape',
+      })
+
+      return sections
+    }, [])
 
   return normalized.length > 0 ? normalized : cloneSectionCollection(fallback)
 }
@@ -5218,11 +5244,6 @@ function formatHomepageSubredditTitle(subreddit: string, nsfwEnabled: boolean) {
   }
 
   return displayMap[subreddit.toLowerCase()] ?? `/r/${subreddit}`
-}
-
-function isPortraitDiscoverySection(title: string) {
-  const normalized = title.trim().toLowerCase()
-  return /tall|vertical|portrait|tiktok|shorts|reels/.test(normalized)
 }
 
 function buildTileGradient(seed: string) {
