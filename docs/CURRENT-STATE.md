@@ -68,6 +68,7 @@ This document is the quickest snapshot of what RedFlix does today.
 - `Comments` button for lightweight comment preview before leaving the app.
 - `Reddit thread` button for opening the original Reddit post.
 - `View creator` flow for creator-focused browsing.
+- Opening `Favorites`, `Followed creators`, or `Followed subreddits` now resets content filters to neutral defaults so those library views do not appear empty after browsing narrow video presets.
 
 ## Privacy and Escape Features
 

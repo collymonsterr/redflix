@@ -352,6 +352,12 @@ function App() {
     setViewerSettings((current) => ({
       ...resetCinemaPresetIfNeeded(current),
       displayMode: 'grid',
+      mediaFilter: defaultViewerSettings.mediaFilter,
+      orientationFilter: defaultViewerSettings.orientationFilter,
+      soundFilter: defaultViewerSettings.soundFilter,
+      freshnessWindowDays: defaultViewerSettings.freshnessWindowDays,
+      hideSeen: defaultViewerSettings.hideSeen,
+      maxDuration: defaultViewerSettings.maxDuration,
     }))
     navigateTo('/favorites')
   }
@@ -360,6 +366,12 @@ function App() {
     setViewerSettings((current) => ({
       ...resetCinemaPresetIfNeeded(current),
       displayMode: 'grid',
+      mediaFilter: defaultViewerSettings.mediaFilter,
+      orientationFilter: defaultViewerSettings.orientationFilter,
+      soundFilter: defaultViewerSettings.soundFilter,
+      freshnessWindowDays: defaultViewerSettings.freshnessWindowDays,
+      hideSeen: defaultViewerSettings.hideSeen,
+      maxDuration: defaultViewerSettings.maxDuration,
     }))
     navigateTo('/following/creators')
   }
@@ -368,6 +380,12 @@ function App() {
     setViewerSettings((current) => ({
       ...resetCinemaPresetIfNeeded(current),
       displayMode: 'grid',
+      mediaFilter: defaultViewerSettings.mediaFilter,
+      orientationFilter: defaultViewerSettings.orientationFilter,
+      soundFilter: defaultViewerSettings.soundFilter,
+      freshnessWindowDays: defaultViewerSettings.freshnessWindowDays,
+      hideSeen: defaultViewerSettings.hideSeen,
+      maxDuration: defaultViewerSettings.maxDuration,
     }))
     navigateTo('/following/subreddits')
   }
