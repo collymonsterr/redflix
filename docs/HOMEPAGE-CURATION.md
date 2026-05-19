@@ -83,4 +83,6 @@ That means:
 - Use showcase rows for subs that are reliably video-heavy, and keep landscape and portrait choices intentional.
 - On the NSFW home, the best pattern is usually: amateur/photo discovery first, sound-on wide video second, and GIF or quick-clip rows third.
 - The homepage now presents categories as single horizontal lanes, so each section should feel like a tight, intentional row rather than a giant catch-all bucket.
+- Discovery rows now default to landscape tiles unless the section title clearly signals tall content such as `Tall`, `Vertical`, `TikTok`, `Shorts`, or `Reels`.
+- The `Continue` lane is intentionally suppressed until there are at least 4 saved sessions, so small amounts of history do not create a weak top row.
 - If a subreddit preview looks stale after major curation changes, a refresh is usually enough.

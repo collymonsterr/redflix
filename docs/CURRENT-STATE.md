@@ -22,6 +22,8 @@ This document is the quickest snapshot of what RedFlix does today.
 - Main discovery now happens through horizontal category lanes instead of stacked dashboard blocks.
 - Each homepage category is a single sideways-scrolling row of subreddit cards.
 - `Continue`, `Saved subs`, `Wide video`, and `Tall video` can all appear as their own lanes before the broader category rows.
+- `Continue` is now hidden unless there are at least 4 saved sessions, which keeps the home page cleaner when history is sparse.
+- Homepage tiles now default to landscape across most rows, and only clearly tall/vertical/TikTok-style sections switch to portrait cards.
 - Wide-video and tall-video lanes stay separate so portrait and landscape discovery do not fight each other.
 - The SFW homepage uses cleaned display labels for Reddit’s older `...Porn`-style safe-for-work subreddit names so the home view stays more presentable.
 - On the NSFW homepage, the regular subreddit links now open straight into viewer mode rather than dropping into grid first.
@@ -50,7 +52,8 @@ This document is the quickest snapshot of what RedFlix does today.
 - The filters panel also includes `Sound` filters so known-audio and known-silent videos can be separated quickly.
 - Favorites, followed feeds, privacy, NSFW, cinema, and reset actions are now consolidated into the same filters/settings surface instead of living in a separate `More` menu.
 - The right-side info panel can be hidden and reopened with the `Info` control, and its actions are grouped into primary follow/autoplay actions and smaller secondary link-outs.
-- Portrait items use vertical arrows and accept `↑` / `↓` keyboard navigation; landscape items use left/right arrows.
+- On-screen stage arrows are always left/right for consistency.
+- Keyboard navigation accepts all four arrow keys, so `↑` / `↓` also move through the feed without changing the stage UI.
 - Known video-heavy subreddits can open with a smarter default orientation so TikTok-style feeds bias tall and wide-video feeds bias landscape.
 - Attempted autoplay with sound when moving to the next direct video.
 - Automatic next-item advance now behaves like autoplay rather than a manual skip, which makes end-of-video handoff more reliable.
@@ -59,6 +62,8 @@ This document is the quickest snapshot of what RedFlix does today.
 - Reddit-hosted videos and some embed-backed posts can now be marked as known-sound or known-silent; fully opaque third-party embeds still fall back to `All` when audio cannot be classified ahead of time.
 - Hover controls in fullscreen for play/pause, mute, and the top viewer dock.
 - The persistent keyboard shortcut hint line is gone; shortcuts stay the same, but the viewer chrome is less noisy.
+- Clicking into the stage area closes the expanded filters panel.
+- Video auto-advance will not fire while playback is paused.
 - `Comments` button for lightweight comment preview before leaving the app.
 - `Reddit thread` button for opening the original Reddit post.
 - `View creator` flow for creator-focused browsing.
