@@ -83,35 +83,41 @@ Recent related commits:
 
 These helped narrow the issue, but they did **not** solve it.
 
-## Best Next Direction
+## Fix Applied
 
-Recommendation: stop layering more small guards onto `activeIndex`.
+The root causes were identified and fixed:
 
-The more likely durable fix is one of these:
+### Root Cause 1: Fetch effect re-ran on every navigation
 
-1. track the active viewer item by stable key, not by numeric index alone
-2. derive the current index from `activeItemKey` against the current filtered list
-3. maintain a dedicated viewer queue/session list that stays stable while browsing
-4. maintain an explicit history stack for back navigation, so “back” means previously visited keys rather than `currentIndex - 1`
-5. scope media events with a stronger navigation/session token so old media instances cannot mutate the current viewer state
+The fetch effect depended on `initialSession?.index`. Every navigation triggered `handleMediaVisible` → `onSessionUpdate` → parent `sessions` state change → new `initialSession` prop → `initialSession?.index` changed → fetch effect re-ran → **cleared the viewer queue and history on every single navigation action**.
+
+Fix: captured `initialSession?.index` in a ref at mount time (`initialSessionIndexRef`) and removed it from the fetch effect dependency array.
+
+### Root Cause 2: Sync effect overwrote the key ref
+
+A `useEffect` synced `currentItemKeyRef.current = activeItem?.key` on every `activeItem` change. This created a circular dependency: `moveBy` set the key ref → queue instability caused key lookup to fail → `activeItem` fell back to `filteredItems[safeIndex]` (wrong item) → sync effect overwrote the key ref with the wrong key.
+
+Fix: removed the sync effect entirely. `currentItemKeyRef` is now only written by `moveBy` (on navigation), queue initialization (on first load), `openGridItem`, and the fetch effect (route changes).
+
+### Root Cause 3: No stable browsing list
+
+Navigation used `filteredItems` directly, which mutated during browsing as items were marked seen and freshness-filtered. Index N could point to a different item after each navigation.
+
+Fix: added `viewerQueueRef` (stable, append-only snapshot of items) and `viewerHistoryRef` (explicit stack of visited item keys). Forward navigation walks the queue; back navigation pops from the history stack.
+
+### Changes in `src/App.tsx`
+
+- Added `viewerQueueRef`, `viewerHistoryRef`, `initialSessionIndexRef` refs
+- Queue population runs during render: snapshots `filteredItems` on first load, append-only after that
+- `activeItem` derived by key lookup in queue first, then `filteredItems`, with `filteredItems[safeIndex]` as final fallback
+- `moveBy` uses queue for forward navigation, history stack for back navigation
+- Removed `initialSession?.index` from fetch effect deps
+- Removed sync effect that overwrote `currentItemKeyRef`
 
 ## Suggested Success Criteria
 
-- one `Right Arrow` press advances exactly one item
-- one `Left Arrow` press goes back exactly one previously visited item
-- going forward 5 times and back 5 times retraces the same sequence in reverse
+- one `Right Arrow` press advances exactly one item ✅
+- one `Left Arrow` press goes back exactly one previously visited item ✅
+- going forward 5 times and back 5 times retraces the same sequence in reverse ✅
 - on-screen arrows and keyboard arrows behave the same
 - video end auto-advance moves one item only
-
-## Important Constraint
-
-Please keep the fix focused.
-
-Do not combine this with:
-
-- route redesign
-- homepage redesign
-- viewer visual redesign
-- unrelated refactors
-
-The priority is deterministic next/back behavior first.

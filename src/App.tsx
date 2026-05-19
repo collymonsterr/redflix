@@ -1727,6 +1727,9 @@ function ViewerPage({
   const lastRecordedItemRef = useRef('')
   const currentItemKeyRef = useRef('')
   const commentRequestIdRef = useRef(0)
+  const viewerQueueRef = useRef<ViewerItem[]>([])
+  const viewerHistoryRef = useRef<string[]>([])
+  const initialSessionIndexRef = useRef(initialSession?.index ?? 0)
 
   const favoriteEntries = useMemo(
     () =>
@@ -1921,13 +1924,39 @@ function ViewerPage({
     filteredItems.every((item) => item.mediaType === filteredItems[0]?.mediaType)
   const useFocusedGrid = isSubredditRoute || isAuthorRoute
 
+  if (!isGridMode && filteredItems.length > 0) {
+    if (viewerQueueRef.current.length === 0) {
+      viewerQueueRef.current = filteredItems
+      if (!currentItemKeyRef.current) {
+        const initIdx = Math.min(activeIndex, filteredItems.length - 1)
+        currentItemKeyRef.current = filteredItems[initIdx]?.key ?? ''
+      }
+    } else {
+      const existingKeys = new Set(viewerQueueRef.current.map((i) => i.key))
+      const newItems = filteredItems.filter((i) => !existingKeys.has(i.key))
+      if (newItems.length > 0) {
+        viewerQueueRef.current = [...viewerQueueRef.current, ...newItems]
+      }
+    }
+  }
+
   const safeIndex =
     filteredItems.length === 0
       ? 0
       : Math.min(activeIndex, filteredItems.length - 1)
 
-  const activeItem = filteredItems[safeIndex]
-  const nextItem = filteredItems[safeIndex + 1]
+  const activeItemByKey = !isGridMode && currentItemKeyRef.current
+    ? viewerQueueRef.current.find((i) => i.key === currentItemKeyRef.current) ??
+      filteredItems.find((i) => i.key === currentItemKeyRef.current)
+    : undefined
+  const activeItem = activeItemByKey ?? filteredItems[safeIndex]
+  const queueIndex = activeItem
+    ? viewerQueueRef.current.findIndex((i) => i.key === activeItem.key)
+    : -1
+  const nextItem =
+    (queueIndex >= 0
+      ? viewerQueueRef.current[queueIndex + 1]
+      : undefined) ?? filteredItems[safeIndex + 1]
   const activeDisplayTitle = activeItem ? formatStageTitle(activeItem.title) : ''
   const isSoundBlocked = Boolean(activeItem && soundBlockedItemKey === activeItem.key)
   const isKnownSilent = activeItem?.audioSupport === 'silent'
@@ -2019,7 +2048,8 @@ function ViewerPage({
 
   const moveBy = useCallback(
     (direction: 1 | -1, options?: { userInitiated?: boolean }) => {
-      if (filteredItems.length === 0) return
+      const queue = viewerQueueRef.current
+      if (queue.length === 0 && filteredItems.length === 0) return
 
       const now = Date.now()
       if (now < navigationLockUntilRef.current) {
@@ -2027,19 +2057,35 @@ function ViewerPage({
       }
 
       navigationLockUntilRef.current = now + (options?.userInitiated ? 360 : 220)
-      const normalizedIndex = Math.min(safeIndex, filteredItems.length - 1)
-      const nextIndex =
-        normalizedIndex + direction < 0
-          ? filteredItems.length - 1
-          : normalizedIndex + direction >= filteredItems.length
-            ? 0
-            : normalizedIndex + direction
-      const nextItemKey = filteredItems[nextIndex]?.key ?? ''
+
+      const effectiveQueue = queue.length > 0 ? queue : filteredItems
+      const currentKey = currentItemKeyRef.current
+      let nextItemKey: string
+
+      if (direction === 1) {
+        const currentIdx = effectiveQueue.findIndex((i) => i.key === currentKey)
+        const safeCurrentIdx = currentIdx >= 0 ? currentIdx : 0
+        const nextIdx = safeCurrentIdx + 1 >= effectiveQueue.length ? 0 : safeCurrentIdx + 1
+        nextItemKey = effectiveQueue[nextIdx]?.key ?? ''
+        if (currentKey) {
+          viewerHistoryRef.current = [...viewerHistoryRef.current, currentKey]
+        }
+      } else {
+        const history = viewerHistoryRef.current
+        if (history.length > 0) {
+          nextItemKey = history[history.length - 1]
+          viewerHistoryRef.current = history.slice(0, -1)
+        } else {
+          const currentIdx = effectiveQueue.findIndex((i) => i.key === currentKey)
+          const safeCurrentIdx = currentIdx >= 0 ? currentIdx : 0
+          const prevIdx = safeCurrentIdx - 1 < 0 ? effectiveQueue.length - 1 : safeCurrentIdx - 1
+          nextItemKey = effectiveQueue[prevIdx]?.key ?? ''
+        }
+      }
 
       const advance = () => {
         revealChrome()
         setProgress(0)
-        setIsPaused(false)
         setSoundBlockedItemKey('')
         setMediaErrorItemKey('')
         setCommentsOpen(false)
@@ -2053,12 +2099,9 @@ function ViewerPage({
               }
             : current,
         )
-        setActiveIndex((current) => {
-          const normalized = Math.min(current, filteredItems.length - 1)
-          const next = normalized + direction
-          if (next < 0) return filteredItems.length - 1
-          if (next >= filteredItems.length) return 0
-          return next
+        setActiveIndex(() => {
+          const idx = viewerQueueRef.current.findIndex((i) => i.key === nextItemKey)
+          return idx >= 0 ? idx : 0
         })
       }
 
@@ -2103,7 +2146,6 @@ function ViewerPage({
       filteredItems,
       onSettingsChange,
       revealChrome,
-      safeIndex,
       settings.volume,
       tryStartSeparateAudio,
     ],
@@ -2115,6 +2157,11 @@ function ViewerPage({
 
       if (settings.displayMode === 'grid') {
         gridScrollTopRef.current = window.scrollY
+      }
+
+      if (nextMode === 'grid') {
+        viewerQueueRef.current = []
+        viewerHistoryRef.current = []
       }
 
       onSettingsChange((current) => ({
@@ -2131,6 +2178,8 @@ function ViewerPage({
 
   const openGridItem = useCallback(
     (index: number) => {
+      viewerQueueRef.current = []
+      viewerHistoryRef.current = []
       gridScrollTopRef.current = window.scrollY
       setIsPaused(false)
       setSoundBlockedItemKey('')
@@ -2358,7 +2407,10 @@ function ViewerPage({
       .then((page) => {
         if (ignore) return
         setFreshnessExemptKeys({})
-        setActiveIndex(initialSession?.index ?? 0)
+        viewerQueueRef.current = []
+        viewerHistoryRef.current = []
+        currentItemKeyRef.current = ''
+        setActiveIndex(initialSessionIndexRef.current)
         setProgress(0)
         setItems(page.items)
         setAfter(page.after)
@@ -2379,15 +2431,13 @@ function ViewerPage({
       ignore = true
       window.clearTimeout(loadingTimeoutId)
     }
-  }, [fetchRoutePage, initialSession?.index, route.kind])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchRoutePage, route.kind])
 
   useEffect(() => {
     warmMediaAsset(nextItem)
   }, [nextItem])
 
-  useEffect(() => {
-    currentItemKeyRef.current = activeItem?.key ?? ''
-  }, [activeItem?.key])
 
   useEffect(() => {
     if (
@@ -2497,7 +2547,9 @@ function ViewerPage({
       return
     }
 
-    if (safeIndex < filteredItems.length - 4) {
+    const effectiveIdx = queueIndex >= 0 ? queueIndex : safeIndex
+    const effectiveLen = viewerQueueRef.current.length || filteredItems.length
+    if (effectiveIdx < effectiveLen - 4) {
       return
     }
 
@@ -2531,6 +2583,7 @@ function ViewerPage({
     isFavoritesRoute,
     isGridMode,
     isLoading,
+    queueIndex,
     safeIndex,
   ])
 
@@ -2837,7 +2890,7 @@ function ViewerPage({
     if (route.kind === 'subreddit') {
       onSessionUpdate(route.subreddit, {
         subreddit: route.subreddit,
-        index: safeIndex,
+        index: queueIndex >= 0 ? queueIndex : safeIndex,
         title: buildSessionTitle(activeItem),
         posterUrl: activeItem.posterUrl,
         updatedAt: Date.now(),
@@ -3596,7 +3649,7 @@ function ViewerPage({
                   <div className="stage-footer-title-wrap">
                     <h3 title={activeItem.title}>{activeDisplayTitle}</h3>
                     <p className="meta-copy">
-                      <span>{safeIndex + 1}/{filteredItems.length}</span>
+                      <span>{(queueIndex >= 0 ? queueIndex : safeIndex) + 1}/{viewerQueueRef.current.length || filteredItems.length}</span>
                       <span>u/{activeItem.author}</span>
                       <span>/r/{activeItem.subreddit}</span>
                       <span>{formatCompactCount(activeItem.score)} upvotes</span>
