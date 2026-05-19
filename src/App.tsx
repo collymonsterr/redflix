@@ -110,7 +110,7 @@ type OpenAuthorOptions = {
   sortMode?: SortMode
 }
 
-const MAX_PREVIEW_REQUESTS = 1
+const MAX_PREVIEW_REQUESTS = 3
 const PREVIEW_ROOT_MARGIN = '240px 0px'
 const DAY_MS = 24 * 60 * 60 * 1000
 const LEGACY_SEEN_ITEM_AGE_DAYS = 8
@@ -846,6 +846,7 @@ function LandingPage({
             <SubredditTile
               key={`saved-${subreddit}`}
               nsfwEnabled={nsfwEnabled}
+              previewEnabled
               subreddit={subreddit}
               title={formatHomepageSubredditTitle(subreddit, nsfwEnabled)}
               onOpenSubreddit={openLandingSubreddit}
@@ -897,6 +898,7 @@ function LandingPage({
               forcedPoster={sessions[toSessionKey(subreddit)]?.posterUrl ?? null}
               nsfwEnabled={nsfwEnabled}
               posterAspect={isLandscapeDiscoverySection(section.title, nsfwEnabled) ? 'landscape' : 'portrait'}
+              previewEnabled
               subreddit={subreddit}
               title={formatHomepageSubredditTitle(subreddit, nsfwEnabled)}
               onOpenSubreddit={openLandingSubreddit}
@@ -916,6 +918,7 @@ function LandingPage({
               forcedPoster={sessions[toSessionKey(subreddit)]?.posterUrl ?? null}
               nsfwEnabled={nsfwEnabled}
               posterAspect={isLandscapeDiscoverySection(section.title, nsfwEnabled) ? 'landscape' : 'portrait'}
+              previewEnabled
               subreddit={subreddit}
               title={formatHomepageSubredditTitle(subreddit, nsfwEnabled)}
               onOpenSubreddit={openLandingSubreddit}
@@ -2274,9 +2277,10 @@ function ViewerPage({
   const handleStageAdvance = useCallback(
     (itemKey: string) => {
       if (currentItemKeyRef.current !== itemKey) return
+      if (isPaused) return
       moveBy(1)
     },
-    [moveBy],
+    [isPaused, moveBy],
   )
 
   const handleRetryMedia = useCallback(() => {
@@ -2856,13 +2860,13 @@ function ViewerPage({
         return
       }
 
-      if (activeItem?.orientation === 'portrait' && event.key === 'ArrowDown') {
+      if (event.key === 'ArrowDown') {
         event.preventDefault()
         moveBy(1, { userInitiated: true })
         return
       }
 
-      if (activeItem?.orientation === 'portrait' && event.key === 'ArrowUp') {
+      if (event.key === 'ArrowUp') {
         event.preventDefault()
         moveBy(-1, { userInitiated: true })
         return
@@ -2916,6 +2920,8 @@ function ViewerPage({
   }, [isGridMode])
 
   const handlePointerDown = (event: PointerEvent<HTMLElement>) => {
+    if (filtersOpen) setFiltersOpen(false)
+
     if (isInteractivePointerTarget(event.target)) {
       pointerStartRef.current = null
       return
@@ -2937,11 +2943,7 @@ function ViewerPage({
     const deltaY = event.clientY - pointerStartRef.current.y
     pointerStartRef.current = null
 
-    if (
-      activeItem?.orientation === 'portrait' &&
-      Math.abs(deltaY) > 60 &&
-      Math.abs(deltaY) > Math.abs(deltaX)
-    ) {
+    if (Math.abs(deltaY) > 60 && Math.abs(deltaY) > Math.abs(deltaX)) {
       moveBy(deltaY < 0 ? 1 : -1, { userInitiated: true })
       return
     }
@@ -3526,27 +3528,21 @@ function ViewerPage({
         >
           <button
             aria-label="Previous item"
-            className={`stage-nav stage-nav--prev ${
-              activeItem?.orientation === 'portrait' ? 'stage-nav--vertical-prev' : ''
-            } ${chromeVisible ? 'is-visible' : ''}`}
+            className={`stage-nav stage-nav--prev ${chromeVisible ? 'is-visible' : ''}`}
             type="button"
             onClick={() => moveBy(-1, { userInitiated: true })}
           >
-            <ArrowIcon
-              direction={activeItem?.orientation === 'portrait' ? 'up' : 'left'}
-            />
+            <ArrowIcon direction="left" />
           </button>
 
           <button
             aria-label="Next item"
-            className={`stage-nav stage-nav--next ${
-              activeItem?.orientation === 'portrait' ? 'stage-nav--vertical-next' : ''
-            } ${chromeVisible ? 'is-visible' : ''}`}
+            className={`stage-nav stage-nav--next ${chromeVisible ? 'is-visible' : ''}`}
             type="button"
             onClick={() => moveBy(1, { userInitiated: true })}
           >
             <ArrowIcon
-              direction={activeItem?.orientation === 'portrait' ? 'down' : 'right'}
+              direction="right"
             />
           </button>
 
@@ -4387,10 +4383,8 @@ function SubredditTile({
     previewOrientation,
   )
 
-  const poster =
-    forcedPoster ??
-    preview?.posterUrl ??
-    buildTileGradient(subreddit)
+  const gradient = buildTileGradient(subreddit)
+  const poster = forcedPoster || preview?.posterUrl || gradient
 
   return (
     <button
@@ -4401,7 +4395,12 @@ function SubredditTile({
     >
       <div
         className={`tile-poster tile-poster--${posterAspect}`}
-        style={{ backgroundImage: formatPoster(poster) }}
+        style={{
+          backgroundImage:
+            poster !== gradient
+              ? `${formatPoster(poster)}, ${gradient}`
+              : gradient,
+        }}
       />
       <div className="tile-copy">
         <p>{title ?? `/r/${subreddit}`}</p>
