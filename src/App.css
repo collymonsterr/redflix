@@ -801,7 +801,7 @@
 }
 
 .viewer-shell.filters-open {
-  --viewer-top-offset: 146px;
+  --viewer-top-offset: 340px;
 }
 
 .viewer-dock,
@@ -841,14 +841,18 @@
 .viewer-dock-main,
 .viewer-dock-filters,
 .viewer-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
   padding: 8px 10px;
   border-radius: 18px;
   background: rgba(12, 15, 20, 0.52);
   border: 1px solid rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(22px);
+}
+
+.viewer-dock-main,
+.viewer-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .viewer-dock-main {
@@ -857,7 +861,29 @@
 }
 
 .viewer-dock-filters {
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-items: start;
+}
+
+.filter-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.filter-box h4 {
+  margin: 0;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+  opacity: 0.7;
 }
 
 .viewer-identity,
@@ -970,9 +996,9 @@
 .filter-group,
 .slider-group {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
 }
 
 .filter-group span,
@@ -996,6 +1022,15 @@
 
 .filter-group button.is-active {
   background: rgba(255, 255, 255, 0.18);
+}
+
+.compact-slider {
+  flex-direction: row !important;
+  flex-wrap: wrap;
+}
+
+.compact-slider > span:first-child {
+  width: 100%;
 }
 
 .compact-slider input {
@@ -1101,14 +1136,10 @@
 }
 
 .viewer-settings-actions {
-  width: 100%;
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  padding-top: 10px;
-  margin-top: 2px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .gallery-shell {
@@ -1930,7 +1961,11 @@ textarea:focus-visible {
   }
 
   .viewer-shell.filters-open {
-    --viewer-top-offset: 252px;
+    --viewer-top-offset: 320px;
+  }
+
+  .viewer-dock-filters {
+    grid-template-columns: 1fr;
   }
 
   .landing-shell {
@@ -1940,7 +1975,6 @@ textarea:focus-visible {
 
   .landing-topbar,
   .viewer-dock-main,
-  .viewer-dock-filters,
   .stage-footer,
   .gallery-toolbar {
     align-items: stretch;

@@ -3213,222 +3213,190 @@ function ViewerPage({
               <span>Filters</span>
             </button>
 
-            <button
-              className={`viewer-utility-button ${showInfoPanel ? 'is-active' : 'muted'}`}
-              title={showInfoPanel ? 'Hide info panel' : 'Show info panel'}
-              type="button"
-              onClick={toggleInfoPanel}
-            >
-              <InfoIcon />
-              <span>Info</span>
-            </button>
           </div>
         </div>
 
         {filtersOpen ? (
           <div className="viewer-dock-filters">
-            <FilterGroup
-              label="View"
-              options={[
-                ['both', 'All'],
-                ['landscape', 'Wide'],
-                ['portrait', 'Tall'],
-              ]}
-              value={settings.orientationFilter === 'both' ? 'both' : settings.orientationFilter}
-              onChange={(value) => {
-                const nextValue = value as 'both' | 'portrait' | 'landscape'
-                updateSetting('mediaFilter', nextValue === 'both' ? 'both' : 'videos')
-                updateSetting('orientationFilter', nextValue)
-              }}
-            />
-
-            <FilterGroup
-              label="Media"
-              options={[
-                ['both', 'All'],
-                ['photos', 'Photos'],
-                ['videos', 'Videos'],
-              ]}
-              value={settings.mediaFilter}
-              onChange={(value) => updateSetting('mediaFilter', value as MediaFilter)}
-            />
-
-            <FilterGroup
-              label="Shape"
-              options={[
-                ['both', 'All'],
-                ['portrait', 'Portrait'],
-                ['landscape', 'Landscape'],
-              ]}
-              value={settings.orientationFilter}
-              onChange={(value) =>
-                updateSetting('orientationFilter', value as OrientationFilter)
-              }
-            />
-
-            <FilterGroup
-              label="Sound"
-              options={[
-                ['all', 'All'],
-                ['sound', 'Sound'],
-                ['silent', 'Silent'],
-              ]}
-              value={settings.soundFilter}
-              onChange={(value) => updateSetting('soundFilter', value as SoundFilter)}
-            />
-
-            {sortOptions.length > 0 ? (
+            <div className="filter-box">
+              <h4>Content</h4>
               <FilterGroup
-                label="Reddit"
-                options={sortOptions}
-                value={effectiveSortMode}
-                onChange={(value) => updateSetting('sortMode', value as SortMode)}
+                label="Media"
+                options={[
+                  ['both', 'All'],
+                  ['photos', 'Photos'],
+                  ['videos', 'Videos'],
+                ]}
+                value={settings.mediaFilter}
+                onChange={(value) => updateSetting('mediaFilter', value as MediaFilter)}
               />
-            ) : null}
-
-            <label className="slider-group compact-slider">
-              <span>{settings.maxDuration}s max</span>
-              <input
-                max="300"
-                min="10"
-                step="10"
-                type="range"
-                value={settings.maxDuration}
-                onChange={(event) =>
-                  updateSetting('maxDuration', Number(event.target.value))
+              <FilterGroup
+                label="Shape"
+                options={[
+                  ['both', 'All'],
+                  ['portrait', 'Portrait'],
+                  ['landscape', 'Landscape'],
+                ]}
+                value={settings.orientationFilter}
+                onChange={(value) =>
+                  updateSetting('orientationFilter', value as OrientationFilter)
                 }
               />
-            </label>
-
-            <label className="slider-group compact-slider">
-              <span>
-                {settings.autoAdvance
-                  ? `${settings.imageDelaySeconds}s delay`
-                  : 'manual advance'}
-              </span>
-              <input
-                max="15"
-                min="1"
-                step="1"
-                type="range"
-                value={settings.imageDelaySeconds}
-                onChange={(event) => {
-                  updateSetting('autoAdvance', true)
-                  updateSetting('imageDelaySeconds', Number(event.target.value))
-                }}
-              />
-            </label>
-
-            <div className="viewer-timer-group" role="group" aria-label="Autoplay timing">
-              <button
-                className={`viewer-link ${settings.autoAdvance ? '' : 'muted'}`}
-                type="button"
-                onClick={() => updateSetting('autoAdvance', !settings.autoAdvance)}
-              >
-                {settings.autoAdvance ? 'Auto' : 'Manual'}
-              </button>
-              {[3, 6, 10, 15].map((seconds) => (
-                <button
-                  key={seconds}
-                  className={`viewer-link ${
-                    settings.autoAdvance && settings.imageDelaySeconds === seconds
-                      ? 'is-active'
-                      : 'muted'
-                  }`}
-                  type="button"
-                  onClick={() => {
-                    updateSetting('autoAdvance', true)
-                    updateSetting('imageDelaySeconds', seconds)
-                  }}
-                >
-                  {seconds}s
-                </button>
-              ))}
-            </div>
-
-            <FilterGroup
-              label="Fresh"
-              options={[
-                ['0', 'All'],
-                ['1', 'Today'],
-                ['3', '3d'],
-                ['7', '7d'],
-              ]}
-              value={String(settings.freshnessWindowDays)}
-              onChange={(value) =>
-                updateSetting('freshnessWindowDays', Number(value) as FreshnessWindowDays)
-              }
-            />
-
-            {isFavoritesRoute && favoriteTags.length > 0 ? (
               <FilterGroup
-                label="Tags"
+                label="Sound"
                 options={[
                   ['all', 'All'],
-                  ...favoriteTags.map((tag) => [tag, tag] as [string, string]),
+                  ['sound', 'Sound'],
+                  ['silent', 'Silent'],
                 ]}
-                value={effectiveSelectedTag}
-                onChange={setSelectedTag}
+                value={settings.soundFilter}
+                onChange={(value) => updateSetting('soundFilter', value as SoundFilter)}
               />
-            ) : null}
-
-            <div className="viewer-settings-actions">
-              <button
-                className={`viewer-link ${isFavoritesRoute ? '' : 'muted'}`}
-                type="button"
-                onClick={onOpenFavorites}
-              >
-                <HeartIcon />
-                <span>Favorites {favoriteEntries.length}</span>
-              </button>
-
-              <button
-                className={`viewer-link ${isFollowingCreatorsRoute ? '' : 'muted'}`}
-                type="button"
-                onClick={onOpenFollowingCreators}
-              >
-                <CreatorIcon />
-                <span>Creators {followedCreators.length}</span>
-              </button>
-
-              <button
-                className={`viewer-link ${isFollowingSubredditsRoute ? '' : 'muted'}`}
-                type="button"
-                onClick={onOpenFollowingSubreddits}
-              >
-                <SubredditIcon />
-                <span>Subreddits {followedSubreddits.length}</span>
-              </button>
-
-              <button className="viewer-link muted" type="button" onClick={onOpenPrivacyDialog}>
-                <LockIcon />
-                <span>{hasPrivacyLock ? 'Privacy' : 'Set lock'}</span>
-              </button>
-
-              <button
-                className={`viewer-link ${nsfwEnabled ? 'is-active' : 'muted'}`}
-                type="button"
-                onClick={onToggleNsfw}
-              >
-                <EyeIcon />
-                <span>NSFW</span>
-              </button>
-
-              {nsfwEnabled ? (
-                <button
-                  className={`viewer-link ${isCinemaRoute ? 'is-active' : 'muted'}`}
-                  type="button"
-                  onClick={onOpenCinema}
-                >
-                  <CinemaIcon />
-                  <span>Cinema</span>
-                </button>
+              {isFavoritesRoute && favoriteTags.length > 0 ? (
+                <FilterGroup
+                  label="Tags"
+                  options={[
+                    ['all', 'All'],
+                    ...favoriteTags.map((tag) => [tag, tag] as [string, string]),
+                  ]}
+                  value={effectiveSelectedTag}
+                  onChange={setSelectedTag}
+                />
               ) : null}
+            </div>
 
-              <button className="viewer-link muted" type="button" onClick={resetContentFilters}>
-                <ResetIcon />
-                <span>Reset</span>
-              </button>
+            <div className="filter-box">
+              <h4>Source</h4>
+              {sortOptions.length > 0 ? (
+                <FilterGroup
+                  label="Sort"
+                  options={sortOptions}
+                  value={effectiveSortMode}
+                  onChange={(value) => updateSetting('sortMode', value as SortMode)}
+                />
+              ) : null}
+              <FilterGroup
+                label="Fresh"
+                options={[
+                  ['0', 'All'],
+                  ['1', 'Today'],
+                  ['3', '3d'],
+                  ['7', '7d'],
+                ]}
+                value={String(settings.freshnessWindowDays)}
+                onChange={(value) =>
+                  updateSetting('freshnessWindowDays', Number(value) as FreshnessWindowDays)
+                }
+              />
+              <label className="slider-group compact-slider">
+                <span>Max duration</span>
+                <input
+                  max="300"
+                  min="10"
+                  step="10"
+                  type="range"
+                  value={settings.maxDuration}
+                  onChange={(event) =>
+                    updateSetting('maxDuration', Number(event.target.value))
+                  }
+                />
+                <span className="slider-value">{settings.maxDuration}s</span>
+              </label>
+            </div>
+
+            <div className="filter-box">
+              <h4>Playback</h4>
+              <div className="filter-group">
+                <span>Advance</span>
+                <div className="chip-row">
+                  <button
+                    className={settings.autoAdvance ? '' : 'is-active'}
+                    type="button"
+                    onClick={() => updateSetting('autoAdvance', false)}
+                  >
+                    Manual
+                  </button>
+                  {[3, 6, 10, 15].map((seconds) => (
+                    <button
+                      key={seconds}
+                      className={
+                        settings.autoAdvance && settings.imageDelaySeconds === seconds
+                          ? 'is-active'
+                          : ''
+                      }
+                      type="button"
+                      onClick={() => {
+                        updateSetting('autoAdvance', true)
+                        updateSetting('imageDelaySeconds', seconds)
+                      }}
+                    >
+                      {seconds}s
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="filter-box">
+              <h4>Library</h4>
+              <div className="viewer-settings-actions">
+                <button
+                  className={`viewer-link ${isFavoritesRoute ? '' : 'muted'}`}
+                  type="button"
+                  onClick={onOpenFavorites}
+                >
+                  <HeartIcon />
+                  <span>Favorites {favoriteEntries.length}</span>
+                </button>
+
+                <button
+                  className={`viewer-link ${isFollowingCreatorsRoute ? '' : 'muted'}`}
+                  type="button"
+                  onClick={onOpenFollowingCreators}
+                >
+                  <CreatorIcon />
+                  <span>Creators {followedCreators.length}</span>
+                </button>
+
+                <button
+                  className={`viewer-link ${isFollowingSubredditsRoute ? '' : 'muted'}`}
+                  type="button"
+                  onClick={onOpenFollowingSubreddits}
+                >
+                  <SubredditIcon />
+                  <span>Subreddits {followedSubreddits.length}</span>
+                </button>
+
+                <button className="viewer-link muted" type="button" onClick={onOpenPrivacyDialog}>
+                  <LockIcon />
+                  <span>{hasPrivacyLock ? 'Privacy' : 'Set lock'}</span>
+                </button>
+
+                <button
+                  className={`viewer-link ${nsfwEnabled ? 'is-active' : 'muted'}`}
+                  type="button"
+                  onClick={onToggleNsfw}
+                >
+                  <EyeIcon />
+                  <span>NSFW</span>
+                </button>
+
+                {nsfwEnabled ? (
+                  <button
+                    className={`viewer-link ${isCinemaRoute ? 'is-active' : 'muted'}`}
+                    type="button"
+                    onClick={onOpenCinema}
+                  >
+                    <CinemaIcon />
+                    <span>Cinema</span>
+                  </button>
+                ) : null}
+
+                <button className="viewer-link muted" type="button" onClick={resetContentFilters}>
+                  <ResetIcon />
+                  <span>Reset</span>
+                </button>
+              </div>
             </div>
           </div>
         ) : null}
@@ -4087,14 +4055,6 @@ function SettingsIcon() {
   return (
     <svg aria-hidden="true" className="stroke-icon" viewBox="0 0 24 24">
       <path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm-4 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
-    </svg>
-  )
-}
-
-function InfoIcon() {
-  return (
-    <svg aria-hidden="true" className="stroke-icon" viewBox="0 0 24 24">
-      <path d="M12 8h.01M11 12h1v5h1M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" />
     </svg>
   )
 }
