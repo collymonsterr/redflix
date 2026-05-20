@@ -3218,184 +3218,188 @@ function ViewerPage({
 
         {filtersOpen ? (
           <div className="viewer-dock-filters">
-            <div className="filter-box">
-              <h4>Content</h4>
-              <FilterGroup
-                label="Media"
-                options={[
-                  ['both', 'All'],
-                  ['photos', 'Photos'],
-                  ['videos', 'Videos'],
-                ]}
-                value={settings.mediaFilter}
-                onChange={(value) => updateSetting('mediaFilter', value as MediaFilter)}
-              />
-              <FilterGroup
-                label="Shape"
-                options={[
-                  ['both', 'All'],
-                  ['portrait', 'Portrait'],
-                  ['landscape', 'Landscape'],
-                ]}
-                value={settings.orientationFilter}
-                onChange={(value) =>
-                  updateSetting('orientationFilter', value as OrientationFilter)
-                }
-              />
-              <FilterGroup
-                label="Sound"
-                options={[
-                  ['all', 'All'],
-                  ['sound', 'Sound'],
-                  ['silent', 'Silent'],
-                ]}
-                value={settings.soundFilter}
-                onChange={(value) => updateSetting('soundFilter', value as SoundFilter)}
-              />
-              {isFavoritesRoute && favoriteTags.length > 0 ? (
-                <FilterGroup
-                  label="Tags"
-                  options={[
-                    ['all', 'All'],
-                    ...favoriteTags.map((tag) => [tag, tag] as [string, string]),
-                  ]}
-                  value={effectiveSelectedTag}
-                  onChange={setSelectedTag}
-                />
-              ) : null}
-            </div>
-
-            <div className="filter-box">
-              <h4>Source</h4>
-              {sortOptions.length > 0 ? (
-                <FilterGroup
-                  label="Sort"
-                  options={sortOptions}
-                  value={effectiveSortMode}
-                  onChange={(value) => updateSetting('sortMode', value as SortMode)}
-                />
-              ) : null}
-              <FilterGroup
-                label="Fresh"
-                options={[
-                  ['0', 'All'],
-                  ['1', 'Today'],
-                  ['3', '3d'],
-                  ['7', '7d'],
-                ]}
-                value={String(settings.freshnessWindowDays)}
-                onChange={(value) =>
-                  updateSetting('freshnessWindowDays', Number(value) as FreshnessWindowDays)
-                }
-              />
-              <label className="slider-group compact-slider">
-                <span>Max duration</span>
-                <input
-                  max="300"
-                  min="10"
-                  step="10"
-                  type="range"
-                  value={settings.maxDuration}
-                  onChange={(event) =>
-                    updateSetting('maxDuration', Number(event.target.value))
-                  }
-                />
-                <span className="slider-value">{settings.maxDuration}s</span>
-              </label>
-            </div>
-
-            <div className="filter-box">
-              <h4>Playback</h4>
-              <div className="filter-group">
-                <span>Advance</span>
-                <div className="chip-row">
-                  <button
-                    className={settings.autoAdvance ? '' : 'is-active'}
-                    type="button"
-                    onClick={() => updateSetting('autoAdvance', false)}
-                  >
-                    Manual
-                  </button>
-                  {[3, 6, 10, 15].map((seconds) => (
-                    <button
-                      key={seconds}
-                      className={
-                        settings.autoAdvance && settings.imageDelaySeconds === seconds
-                          ? 'is-active'
-                          : ''
-                      }
-                      type="button"
-                      onClick={() => {
-                        updateSetting('autoAdvance', true)
-                        updateSetting('imageDelaySeconds', seconds)
-                      }}
-                    >
-                      {seconds}s
-                    </button>
-                  ))}
+            <div className="filter-row">
+              <div className="filter-box">
+                <h4>Content</h4>
+                <div className="filter-box-body">
+                  <FilterGroup
+                    label="Media"
+                    options={[
+                      ['both', 'All'],
+                      ['photos', 'Photos'],
+                      ['videos', 'Videos'],
+                    ]}
+                    value={settings.mediaFilter}
+                    onChange={(value) => updateSetting('mediaFilter', value as MediaFilter)}
+                  />
+                  <FilterGroup
+                    label="Shape"
+                    options={[
+                      ['both', 'All'],
+                      ['portrait', 'Portrait'],
+                      ['landscape', 'Landscape'],
+                    ]}
+                    value={settings.orientationFilter}
+                    onChange={(value) =>
+                      updateSetting('orientationFilter', value as OrientationFilter)
+                    }
+                  />
+                  <FilterGroup
+                    label="Sound"
+                    options={[
+                      ['all', 'All'],
+                      ['sound', 'Sound'],
+                      ['silent', 'Silent'],
+                    ]}
+                    value={settings.soundFilter}
+                    onChange={(value) => updateSetting('soundFilter', value as SoundFilter)}
+                  />
+                  {isFavoritesRoute && favoriteTags.length > 0 ? (
+                    <FilterGroup
+                      label="Tags"
+                      options={[
+                        ['all', 'All'],
+                        ...favoriteTags.map((tag) => [tag, tag] as [string, string]),
+                      ]}
+                      value={effectiveSelectedTag}
+                      onChange={setSelectedTag}
+                    />
+                  ) : null}
+                </div>
+              </div>
+              <div className="filter-box">
+                <h4>Playback</h4>
+                <div className="filter-box-body">
+                  <div className="filter-group">
+                    <span>Advance</span>
+                    <div className="chip-row">
+                      <button
+                        className={settings.autoAdvance ? '' : 'is-active'}
+                        type="button"
+                        onClick={() => updateSetting('autoAdvance', false)}
+                      >
+                        Manual
+                      </button>
+                      {[3, 6, 10, 15].map((seconds) => (
+                        <button
+                          key={seconds}
+                          className={
+                            settings.autoAdvance && settings.imageDelaySeconds === seconds
+                              ? 'is-active'
+                              : ''
+                          }
+                          type="button"
+                          onClick={() => {
+                            updateSetting('autoAdvance', true)
+                            updateSetting('imageDelaySeconds', seconds)
+                          }}
+                        >
+                          {seconds}s
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="filter-box">
-              <h4>Library</h4>
-              <div className="viewer-settings-actions">
-                <button
-                  className={`viewer-link ${isFavoritesRoute ? '' : 'muted'}`}
-                  type="button"
-                  onClick={onOpenFavorites}
-                >
-                  <HeartIcon />
-                  <span>Favorites {favoriteEntries.length}</span>
-                </button>
-
-                <button
-                  className={`viewer-link ${isFollowingCreatorsRoute ? '' : 'muted'}`}
-                  type="button"
-                  onClick={onOpenFollowingCreators}
-                >
-                  <CreatorIcon />
-                  <span>Creators {followedCreators.length}</span>
-                </button>
-
-                <button
-                  className={`viewer-link ${isFollowingSubredditsRoute ? '' : 'muted'}`}
-                  type="button"
-                  onClick={onOpenFollowingSubreddits}
-                >
-                  <SubredditIcon />
-                  <span>Subreddits {followedSubreddits.length}</span>
-                </button>
-
-                <button className="viewer-link muted" type="button" onClick={onOpenPrivacyDialog}>
-                  <LockIcon />
-                  <span>{hasPrivacyLock ? 'Privacy' : 'Set lock'}</span>
-                </button>
-
-                <button
-                  className={`viewer-link ${nsfwEnabled ? 'is-active' : 'muted'}`}
-                  type="button"
-                  onClick={onToggleNsfw}
-                >
-                  <EyeIcon />
-                  <span>NSFW</span>
-                </button>
-
-                {nsfwEnabled ? (
-                  <button
-                    className={`viewer-link ${isCinemaRoute ? 'is-active' : 'muted'}`}
-                    type="button"
-                    onClick={onOpenCinema}
-                  >
-                    <CinemaIcon />
-                    <span>Cinema</span>
-                  </button>
-                ) : null}
-
-                <button className="viewer-link muted" type="button" onClick={resetContentFilters}>
-                  <ResetIcon />
-                  <span>Reset</span>
-                </button>
+            <div className="filter-row">
+              <div className="filter-box">
+                <h4>Source</h4>
+                <div className="filter-box-body">
+                  {sortOptions.length > 0 ? (
+                    <FilterGroup
+                      label="Sort"
+                      options={sortOptions}
+                      value={effectiveSortMode}
+                      onChange={(value) => updateSetting('sortMode', value as SortMode)}
+                    />
+                  ) : null}
+                  <FilterGroup
+                    label="Fresh"
+                    options={[
+                      ['0', 'All'],
+                      ['1', 'Today'],
+                      ['3', '3d'],
+                      ['7', '7d'],
+                    ]}
+                    value={String(settings.freshnessWindowDays)}
+                    onChange={(value) =>
+                      updateSetting('freshnessWindowDays', Number(value) as FreshnessWindowDays)
+                    }
+                  />
+                  <label className="slider-group compact-slider">
+                    <span>Max duration</span>
+                    <input
+                      max="300"
+                      min="10"
+                      step="10"
+                      type="range"
+                      value={settings.maxDuration}
+                      onChange={(event) =>
+                        updateSetting('maxDuration', Number(event.target.value))
+                      }
+                    />
+                    <span className="slider-value">{settings.maxDuration}s</span>
+                  </label>
+                </div>
+              </div>
+              <div className="filter-box">
+                <h4>Library</h4>
+                <div className="filter-box-body">
+                  <div className="viewer-settings-actions">
+                    <button
+                      className={`viewer-link ${isFavoritesRoute ? '' : 'muted'}`}
+                      type="button"
+                      onClick={onOpenFavorites}
+                    >
+                      <HeartIcon />
+                      <span>Favorites {favoriteEntries.length}</span>
+                    </button>
+                    <button
+                      className={`viewer-link ${isFollowingCreatorsRoute ? '' : 'muted'}`}
+                      type="button"
+                      onClick={onOpenFollowingCreators}
+                    >
+                      <CreatorIcon />
+                      <span>Creators {followedCreators.length}</span>
+                    </button>
+                    <button
+                      className={`viewer-link ${isFollowingSubredditsRoute ? '' : 'muted'}`}
+                      type="button"
+                      onClick={onOpenFollowingSubreddits}
+                    >
+                      <SubredditIcon />
+                      <span>Subreddits {followedSubreddits.length}</span>
+                    </button>
+                    <button className="viewer-link muted" type="button" onClick={onOpenPrivacyDialog}>
+                      <LockIcon />
+                      <span>{hasPrivacyLock ? 'Privacy' : 'Set lock'}</span>
+                    </button>
+                    <button
+                      className={`viewer-link ${nsfwEnabled ? 'is-active' : 'muted'}`}
+                      type="button"
+                      onClick={onToggleNsfw}
+                    >
+                      <EyeIcon />
+                      <span>NSFW</span>
+                    </button>
+                    {nsfwEnabled ? (
+                      <button
+                        className={`viewer-link ${isCinemaRoute ? 'is-active' : 'muted'}`}
+                        type="button"
+                        onClick={onOpenCinema}
+                      >
+                        <CinemaIcon />
+                        <span>Cinema</span>
+                      </button>
+                    ) : null}
+                    <button className="viewer-link muted" type="button" onClick={resetContentFilters}>
+                      <ResetIcon />
+                      <span>Reset</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
