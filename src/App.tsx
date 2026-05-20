@@ -1751,6 +1751,7 @@ function ViewerPage({
   const [freshnessExemptKeys, setFreshnessExemptKeys] = useState<Record<string, true>>({})
   const [viewerQueue, setViewerQueue] = useState<ViewerItem[]>([])
   const [viewerHistory, setViewerHistory] = useState<string[]>([])
+  const [showShortcuts, setShowShortcuts] = useState(false)
   const [commentsOpen, setCommentsOpen] = useState(false)
   const [comments, setComments] = useState<RedditComment[]>([])
   const [commentsStatus, setCommentsStatus] = useState<
@@ -1769,6 +1770,7 @@ function ViewerPage({
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null)
   const lastRecordedItemRef = useRef('')
   const currentItemKeyRef = useRef('')
+  const activeItemRef = useRef<ViewerItem | null>(null)
   const initialSessionIndexRef = useRef(initialSession?.index ?? 0)
   const commentRequestIdRef = useRef(0)
 
@@ -1983,6 +1985,7 @@ function ViewerPage({
     ? filteredItems.find((item) => item.key === activeItemKey)
     : undefined
   const activeItem = queueActiveItem ?? filteredActiveItem ?? filteredItems[safeIndex]
+  activeItemRef.current = activeItem ?? null
   const queueIndex = activeItem
     ? viewerQueue.findIndex((item) => item.key === activeItem.key)
     : -1
@@ -2921,6 +2924,12 @@ function ViewerPage({
         return
       }
 
+      if (event.key.toLowerCase() === 'h') {
+        event.preventDefault()
+        if (activeItemRef.current) onToggleFavorite(activeItemRef.current)
+        return
+      }
+
       if (event.key.toLowerCase() === 'm') {
         event.preventDefault()
         onSettingsChange((current) => ({
@@ -2929,11 +2938,23 @@ function ViewerPage({
         }))
         return
       }
+
+      if (event.key === '?') {
+        event.preventDefault()
+        setShowShortcuts((v) => !v)
+        return
+      }
+
+      if (event.key === 'Escape' && showShortcuts) {
+        event.preventDefault()
+        setShowShortcuts(false)
+        return
+      }
     }
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [activeItem?.orientation, handleToggleFullscreen, isGridMode, moveBy, onSettingsChange, togglePause])
+  }, [handleToggleFullscreen, isGridMode, moveBy, onSettingsChange, onToggleFavorite, showShortcuts, togglePause])
 
   useEffect(() => {
     const onFullscreenChange = () => {
@@ -3885,6 +3906,26 @@ function ViewerPage({
           ) : null}
         </section>
       )}
+
+      {showShortcuts ? (
+        <div className="shortcuts-overlay" onClick={() => setShowShortcuts(false)}>
+          <div className="shortcuts-panel" onClick={(e) => e.stopPropagation()}>
+            <h3>Keyboard Shortcuts</h3>
+            <div className="shortcuts-grid">
+              <kbd>←</kbd><span>Previous</span>
+              <kbd>→</kbd><span>Next</span>
+              <kbd>↑</kbd><span>Previous</span>
+              <kbd>↓</kbd><span>Next</span>
+              <kbd>Space</kbd><span>Pause / Resume</span>
+              <kbd>H</kbd><span>Favourite</span>
+              <kbd>F</kbd><span>Fullscreen</span>
+              <kbd>M</kbd><span>Mute / Unmute</span>
+              <kbd>?</kbd><span>Show shortcuts</span>
+              <kbd>Esc</kbd><span>Close</span>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   )
 }

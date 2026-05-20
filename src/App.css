@@ -1039,6 +1039,54 @@
   width: min(160px, 42vw);
 }
 
+.shortcuts-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+}
+
+.shortcuts-panel {
+  padding: 24px 32px;
+  border-radius: 18px;
+  background: rgba(12, 15, 20, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.shortcuts-panel h3 {
+  margin: 0 0 16px;
+  font-size: 0.9rem;
+  color: var(--paper);
+}
+
+.shortcuts-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 20px;
+  align-items: center;
+}
+
+.shortcuts-grid kbd {
+  display: inline-block;
+  min-width: 28px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  color: var(--paper);
+  text-align: center;
+}
+
+.shortcuts-grid span {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
 .viewer-stage-shell {
   position: relative;
   min-height: 100svh;
