@@ -47,12 +47,13 @@ This document is the quickest snapshot of what RedFlix does today.
 - When the current page is too stale, the viewer can pull deeper Reddit pages automatically to top up fresh results.
 - Freshness filtering no longer ejects items you already stepped through in the current viewer session.
 - Viewer next/back navigation now runs on a stable queue plus explicit history stack, so going backward retraces the items you actually visited instead of whatever happens to be at the previous filtered index.
-- The top dock is now intentionally lean: `Home`, source, search, `Viewer / Grid`, `Filters`, and `Info`.
-- Quick `All / Wide / Tall` switching now lives inside the expanded filters panel instead of the main dock.
-- Reddit-style ranking controls such as `Hot`, `Top day`, `Top week`, `Top month`, and `Top all` live in the expanded filters panel.
-- The filters panel also includes `Sound` filters so known-audio and known-silent videos can be separated quickly.
-- Favorites, followed feeds, privacy, NSFW, cinema, and reset actions are now consolidated into the same filters/settings surface instead of living in a separate `More` menu.
-- The right-side info panel can be hidden and reopened with the `Info` control, and its actions are grouped into primary follow/autoplay actions and smaller secondary link-outs.
+- The top dock is intentionally lean: `Home`, source, search, `Viewer / Grid`, and `Filters`.
+- The filters panel is organized into two rows of paired boxes: Content + Playback on top, Source + Library on bottom.
+- Content filters: Media (Photos/Videos), Shape (Portrait/Landscape), Sound (Sound/Silent), and Tags (on favorites route).
+- Source filters: Sort (Hot/Top day/week/month/year/all), Fresh (All/Today/3d/7d), and Max duration slider.
+- Playback: Manual advance or preset auto-advance timing (3s/6s/10s/15s).
+- Library: quick access to Favorites, Creators, Subreddits, Set lock, NSFW, Cinema, and Reset.
+- The Info button has been removed; the right-side info panel is always visible in viewer mode.
 - On-screen stage arrows are always left/right for consistency.
 - Keyboard navigation accepts all four arrow keys, so `↑` / `↓` also move through the feed without changing the stage UI.
 - Known video-heavy subreddits can open with a smarter default orientation so TikTok-style feeds bias tall and wide-video feeds bias landscape.
@@ -62,7 +63,8 @@ This document is the quickest snapshot of what RedFlix does today.
 - Failed clips now stop on an inline error card with `Retry` and `Next` instead of silently skipping through the whole feed.
 - Reddit-hosted videos and some embed-backed posts can now be marked as known-sound or known-silent; fully opaque third-party embeds still fall back to `All` when audio cannot be classified ahead of time.
 - Hover controls in fullscreen for play/pause, mute, and the top viewer dock.
-- The persistent keyboard shortcut hint line is gone; shortcuts stay the same, but the viewer chrome is less noisy.
+- Keyboard shortcuts: `←`/`→`/`↑`/`↓` navigate, `Space` pause, `H` favourite, `F` fullscreen, `M` mute, `?` shows shortcuts overlay.
+- All keyboard shortcuts work in fullscreen mode.
 - Clicking into the stage area closes the expanded filters panel.
 - Video auto-advance will not fire while playback is paused.
 - `Comments` button for lightweight comment preview before leaving the app.

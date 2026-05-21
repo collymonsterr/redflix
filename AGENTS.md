@@ -25,12 +25,14 @@ RedFlix is a private Reddit media viewer focused on:
 ## Important Current Features
 
 - Viewer, grid, and cinema modes
-- Favorites
+- Favorites (toggle with `H` key, works in fullscreen)
 - Followed creators
 - Followed subreddits
 - Comment preview panel
 - Quick-exit safe-cover screen with return path
 - Homepage curation editor via `Edit home`
+- Keyboard shortcuts overlay (`?` key)
+- Sound filter (Sound / Silent / All)
 
 ## Viewer Navigation Note
 
